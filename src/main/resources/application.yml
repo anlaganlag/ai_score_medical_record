@@ -1,0 +1,77 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ai-medical-score
+  
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://172.16.1.15:3306/bailun?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: 44033@lzd
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+        
+  # Flyway数据库迁移
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    
+  # Redis配置
+  redis:
+    host: 172.16.1.15
+    port: 6379
+    database: 15
+    password: redis123
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+    
+# AI配置
+ai:
+  deepseek:
+    api-url: https://api.siliconflow.cn/v1/chat/completions
+    api-key: sk-stwdcstqnkcztrsqsrmosrcpekiacrualyzzvsgfmzjvuurv
+    model: deepseek-ai/DeepSeek-R1
+    retry-count: 1
+    timeout: 600000
+    temperature: 0.1
+    max-tokens: 10000
+  
+  hms:
+    api-url: http://172.16.1.13:10086
+    token: d440578b-5ab3-4254-adf9-d9527503ae84
+    dept-id: 100
+
+# 日志配置
+logging:
+  level:
+    com.bailun.ai: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always 

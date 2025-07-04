@@ -1,0 +1,107 @@
+### 通用开发环境 ###
+# IDE 配置文件
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.sw?
+
+# 编辑器临时文件
+*~
+~$*
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+
+### Java 编译输出 ###
+# 编译产物
+target/
+build/
+out/
+bin/
+
+# 打包文件
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+
+### 依赖管理 ###
+# Maven 依赖缓存
+.m2/
+
+
+
+
+### 日志文件 ###
+*.log
+logs/
+
+
+### 测试相关 ###
+# 单元测试报告
+**/test-output/
+**/reports/
+**/surefire-reports/
+**/failsafe-reports/
+
+
+### 配置文件 ###
+# 本地开发配置（通常包含敏感信息）
+application-local.properties
+application-dev.properties
+*-local.yml
+*-dev.yml
+
+# 密钥文件
+*.jks
+*.p12
+*.key
+*.cer
+
+
+### 数据库文件 ###
+# H2 数据库文件
+*.h2.db
+*.mv.db
+
+# HSQLDB
+*.script
+*.log
+*.lck
+
+# SQLite
+*.sqlite
+*.db
+
+
+### 前端构建产物 ###
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Webpack
+dist/
+webpack-report.html
+
+# React/Vue/Angular
+**/static/js/
+**/static/css/
+
+
+### 热部署工具 ###
+spring-boot-devtools.properties
+
+
+### 其他 ###
+# 环境变量文件
+.env
+
+# 覆盖率报告
+coverage/
+*.lcov

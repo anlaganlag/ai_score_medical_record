@@ -1,0 +1,71 @@
+# AI病历质控系统配置模板
+# 复制此文件为 application-prod.yml 并修改相应配置
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ai-medical-score
+  
+  # 数据库配置 - 请修改为实际配置
+  datasource:
+    url: jdbc:mysql://YOUR_DB_HOST:3306/bailun?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: YOUR_DB_USERNAME
+    password: YOUR_DB_PASSWORD
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: validate  # 生产环境建议使用 validate
+    show-sql: false      # 生产环境建议关闭SQL日志
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.MySQLDialect
+        
+  # Flyway数据库迁移
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# AI服务配置 - 请修改为实际配置
+ai:
+  # DeepSeek AI配置
+  deepseek:
+    api-url: https://api.siliconflow.cn/v1/chat/completions
+    api-key: YOUR_DEEPSEEK_API_KEY  # 请替换为实际的API密钥
+    model: deepseek-ai/DeepSeek-R1-0528-Qwen3-8B
+    temperature: 0.1
+    max-tokens: 4000
+    timeout: 30000  # 30秒超时
+    retry-count: 1  # 重试1次
+    
+  # HMS系统配置
+  hms:
+    api-url: http://YOUR_HMS_HOST:PORT  # 请替换为实际的HMS系统地址
+    token: YOUR_HMS_TOKEN              # 请替换为实际的访问token
+    dept-id: YOUR_DEPT_ID              # 请替换为实际的部门ID
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# 日志配置
+logging:
+  level:
+    com.bailun.ai: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+  file:
+    name: logs/ai-medical-score.log
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n" 

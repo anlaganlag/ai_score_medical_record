@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # AI病历质控系统应用
+  ai-medical-score:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # 数据库连接配置
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/bailun?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+      - SPRING_DATASOURCE_USERNAME=ai_score
+      - SPRING_DATASOURCE_PASSWORD=ai_score_password
+      # AI服务配置
+      - AI_DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-your_deepseek_api_key}
+      - AI_HMS_API_URL=${HMS_API_URL:-http://your-hms-host:port}
+      - AI_HMS_TOKEN=${HMS_TOKEN:-your_hms_token}
+      - AI_HMS_DEPT_ID=${HMS_DEPT_ID:-100}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - ai-medical-network
+
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: bailun
+      MYSQL_USER: ai_score
+      MYSQL_PASSWORD: ai_score_password
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - ai-medical-network
+
+  # Redis缓存 (可选)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ai-medical-network
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  ai-medical-network:
+    driver: bridge 
