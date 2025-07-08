@@ -62,4 +62,19 @@ public class AiScoreMedicalRecord {
 
     @Column(name = "version", nullable = false, columnDefinition = "INT DEFAULT 1")
     private Integer version = 1;
+
+    @Column(name = "ai_prompt", columnDefinition = "TEXT")
+    private String aiPrompt;
+
+    @Column(name = "ai_request_json", columnDefinition = "JSON")
+    private String aiRequestJson;
+
+    @Column(name = "ai_response_json", columnDefinition = "JSON")
+    private String aiResponseJson;
+
+    @Column(name = "patient_basic_info", columnDefinition = "JSON")
+    private String patientBasicInfo;
+
+    @Column(name = "treatment_info", columnDefinition = "JSON")
+    private String treatmentInfo;
 } 

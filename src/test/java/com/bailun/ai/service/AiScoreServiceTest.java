@@ -18,6 +18,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -82,13 +84,24 @@ class AiScoreServiceTest {
         when(hmsApiService.getPatientInfo(3835L)).thenReturn(testPatientInfo);
         when(hmsApiService.getTreatmentInfo(3835L)).thenReturn(testTreatmentInfo);
         
+        // Mock the raw patient data
+        Map<String, Object> mockPatientData = new HashMap<>();
+        mockPatientData.put("name", "胡安秀");
+        mockPatientData.put("id", 2115);
+        when(hmsApiService.getPatientInfoRaw(3835L)).thenReturn(mockPatientData);
+        
         AiScoreResponse expectedAiResponse = new AiScoreResponse();
         expectedAiResponse.setTotalScore(70);
         expectedAiResponse.setLevel("乙级");
 
         AiScoreDebugResponse debugResponse = new AiScoreDebugResponse();
         debugResponse.setScoreResponse(expectedAiResponse);
-        when(deepSeekApiService.evaluateMedicalRecordWithDebug(any())).thenReturn(debugResponse);
+        debugResponse.setAiPrompt("Test prompt");
+        debugResponse.setAiRequestJson("{}");
+        debugResponse.setAiResponseJson("{}");
+        
+        // Use the new structured method
+        when(deepSeekApiService.evaluateMedicalRecordWithDebug(eq(mockPatientData), eq(testTreatmentInfo))).thenReturn(debugResponse);
 
         AiScoreMedicalRecord savedRecord = new AiScoreMedicalRecord();
         savedRecord.setId(1L);
@@ -103,9 +116,11 @@ class AiScoreServiceTest {
         assertNotNull(result);
         assertEquals(3835L, result.getPatientId());
         assertEquals(70, result.getScoreTotal());
+        
         verify(hmsApiService).getPatientInfo(3835L);
         verify(hmsApiService).getTreatmentInfo(3835L);
-        verify(deepSeekApiService).evaluateMedicalRecordWithDebug(any());
+        verify(hmsApiService).getPatientInfoRaw(3835L);
+        verify(deepSeekApiService).evaluateMedicalRecordWithDebug(eq(mockPatientData), eq(testTreatmentInfo));
         verify(repository).save(any(AiScoreMedicalRecord.class));
     }
 
@@ -214,31 +229,37 @@ class AiScoreServiceTest {
 
     @Test
     void testGenerateAiScore_WithIncompleteData() {
-        // Given - 模拟数据不完整的情况
-        PatientInfoDTO incompletePatientInfo = new PatientInfoDTO();
-        incompletePatientInfo.setId(3835L);
-        incompletePatientInfo.setName("胡安秀");
-        // 其他字段为空
-
+        // Given - 不完整的治疗信息
         TreatmentInfoDTO incompleteTreatmentInfo = new TreatmentInfoDTO();
         incompleteTreatmentInfo.setPatientId(3835L);
         // 其他字段为空
-
-        when(hmsApiService.getPatientInfo(3835L)).thenReturn(incompletePatientInfo);
+        
+        when(hmsApiService.getPatientInfo(3835L)).thenReturn(testPatientInfo);
         when(hmsApiService.getTreatmentInfo(3835L)).thenReturn(incompleteTreatmentInfo);
         
-        AiScoreResponse expectedAiResponse = new AiScoreResponse();
-        expectedAiResponse.setTotalScore(30); // 数据不完整，分数较低
-        expectedAiResponse.setLevel("丙级");
+        // Mock the raw patient data
+        Map<String, Object> mockPatientData = new HashMap<>();
+        mockPatientData.put("name", "胡安秀");
+        when(hmsApiService.getPatientInfoRaw(3835L)).thenReturn(mockPatientData);
+        
+        AiScoreResponse lowScoreResponse = new AiScoreResponse();
+        lowScoreResponse.setTotalScore(60);
+        lowScoreResponse.setLevel("丙级");
 
         AiScoreDebugResponse debugResponse = new AiScoreDebugResponse();
-        debugResponse.setScoreResponse(expectedAiResponse);
-        when(deepSeekApiService.evaluateMedicalRecordWithDebug(any())).thenReturn(debugResponse);
+        debugResponse.setScoreResponse(lowScoreResponse);
+        debugResponse.setAiPrompt("Test prompt");
+        debugResponse.setAiRequestJson("{}");
+        debugResponse.setAiResponseJson("{}");
+        
+        // Mock with the correct two-parameter method
+        when(deepSeekApiService.evaluateMedicalRecordWithDebug(eq(mockPatientData), eq(incompleteTreatmentInfo))).thenReturn(debugResponse);
 
         AiScoreMedicalRecord savedRecord = new AiScoreMedicalRecord();
         savedRecord.setId(1L);
         savedRecord.setPatientId(3835L);
-        savedRecord.setScoreTotal(30);
+        savedRecord.setScoreTotal(60);
+        savedRecord.setScoreLevel("丙级");
         when(repository.save(any(AiScoreMedicalRecord.class))).thenReturn(savedRecord);
 
         // When
@@ -246,9 +267,10 @@ class AiScoreServiceTest {
 
         // Then
         assertNotNull(result);
-        assertEquals(3835L, result.getPatientId());
-        assertEquals(30, result.getScoreTotal());
-        verify(deepSeekApiService).evaluateMedicalRecordWithDebug(any());
+        assertEquals(60, result.getScoreTotal());
+        assertEquals("丙级", result.getScoreLevel());
+        
+        verify(deepSeekApiService).evaluateMedicalRecordWithDebug(eq(mockPatientData), eq(incompleteTreatmentInfo));
     }
 
     @Test
@@ -256,16 +278,21 @@ class AiScoreServiceTest {
         // Given
         when(hmsApiService.getPatientInfo(3835L)).thenReturn(testPatientInfo);
         when(hmsApiService.getTreatmentInfo(3835L)).thenReturn(testTreatmentInfo);
-        when(deepSeekApiService.evaluateMedicalRecordWithDebug(any())).thenThrow(new RuntimeException("API调用失败"));
+        
+        Map<String, Object> mockPatientData = new HashMap<>();
+        mockPatientData.put("name", "胡安秀");
+        when(hmsApiService.getPatientInfoRaw(3835L)).thenReturn(mockPatientData);
+        
+        // Mock API failure with the correct two-parameter method
+        when(deepSeekApiService.evaluateMedicalRecordWithDebug(eq(mockPatientData), eq(testTreatmentInfo)))
+            .thenThrow(new RuntimeException("DeepSeek API调用失败"));
 
         // When & Then
         assertThrows(RuntimeException.class, () -> {
             aiScoreService.generateAiScore(testRequest);
         });
         
-        verify(hmsApiService).getPatientInfo(3835L);
-        verify(hmsApiService).getTreatmentInfo(3835L);
-        verify(deepSeekApiService).evaluateMedicalRecordWithDebug(any());
+        verify(deepSeekApiService).evaluateMedicalRecordWithDebug(eq(mockPatientData), eq(testTreatmentInfo));
         verify(repository, never()).save(any());
     }
 } 

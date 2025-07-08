@@ -29,6 +29,7 @@ public class AiScoreController {
     /**
      * 生成/更新AI评分
      */
+    @CrossOrigin(origins = {"http://localhost:5500", "http://127.0.0.1:5500"}, allowCredentials = "true")
     @PostMapping("/generate")
     public ResponseEntity<Map<String, Object>> generateAiScore(
             @Valid @RequestBody AiScoreRequest request,
@@ -59,6 +60,7 @@ public class AiScoreController {
     /**
      * 查看AI评分报告
      */
+    @CrossOrigin(origins = {"http://localhost:5500", "http://127.0.0.1:5500"}, allowCredentials = "true")
     @GetMapping("/report/{patientId}")
     public ResponseEntity<Map<String, Object>> getAiScoreReport(
             @PathVariable @NotNull Long patientId,
@@ -86,6 +88,7 @@ public class AiScoreController {
     /**
      * 保存专家点评
      */
+    @CrossOrigin(origins = {"http://localhost:5500", "http://127.0.0.1:5500"}, allowCredentials = "true")
     @PostMapping("/expert-comment")
     public ResponseEntity<Map<String, Object>> saveExpertComment(
             @RequestBody Map<String, Object> request,
@@ -126,6 +129,16 @@ public class AiScoreController {
         data.put("expertComment", record.getExpertComment());
         data.put("createdTime", record.getCreatedTime());
         data.put("updatedTime", record.getUpdatedTime());
+        
+        // 添加调试信息
+        data.put("aiPrompt", record.getAiPrompt());
+        data.put("aiRequestJson", record.getAiRequestJson());
+        data.put("aiResponseJson", record.getAiResponseJson());
+        data.put("aiModel", record.getAiModel());
+        
+        // 添加患者基本信息和诊疗信息
+        data.put("patientBasicInfo", record.getPatientBasicInfo());
+        data.put("treatmentInfo", record.getTreatmentInfo());
         
         // 解析评分结果JSON
         try {

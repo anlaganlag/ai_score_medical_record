@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  * HMS API服务实现类
@@ -49,7 +50,7 @@ public class HmsApiServiceImpl implements HmsApiService {
                     .build();
 
             Map<String, Object> response = webClient.get()
-                    .uri("/admin-api/business/patient/get?id={id}", patientId)
+                    .uri("/admin-api/business/outpatient-blood/get?patientId={patientId}", patientId)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .timeout(TIMEOUT)
@@ -66,6 +67,38 @@ public class HmsApiServiceImpl implements HmsApiService {
         } catch (Exception e) {
             log.error("调用HMS API获取患者信息失败，患者ID: {}", patientId, e);
             throw new RuntimeException("获取患者信息失败", e);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getPatientInfoRaw(Long patientId) {
+        log.info("调用HMS API获取患者原始信息，患者ID: {}", patientId);
+        
+        try {
+            WebClient webClient = webClientBuilder
+                    .baseUrl(hmsApiUrl)
+                    .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + hmsToken)
+                    .defaultHeader("systemdeptid", hmsDeptId)
+                    .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .build();
+
+            Map<String, Object> response = webClient.get()
+                    .uri("/admin-api/business/outpatient-blood/get?patientId={patientId}", patientId)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(TIMEOUT)
+                    .block();
+
+            if (response != null && response.get("code").equals(0)) {
+                return (Map<String, Object>) response.get("data");
+            } else {
+                log.error("HMS API返回错误: {}", response);
+                return new HashMap<>();
+            }
+            
+        } catch (Exception e) {
+            log.error("调用HMS API获取患者原始信息失败，患者ID: {}", patientId, e);
+            throw new RuntimeException("获取患者原始信息失败", e);
         }
     }
 

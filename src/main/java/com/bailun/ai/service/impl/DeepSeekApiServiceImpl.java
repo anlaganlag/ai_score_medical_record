@@ -1,7 +1,10 @@
 package com.bailun.ai.service.impl;
 
 import com.bailun.ai.dto.AiScoreResponse;
+import com.bailun.ai.dto.AiScoreDebugResponse;
+import com.bailun.ai.dto.TreatmentInfoDTO;
 import com.bailun.ai.service.DeepSeekApiService;
+import com.bailun.ai.service.PromptTemplateService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +32,7 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
 
     private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
+    private final PromptTemplateService promptTemplateService;
 
     @Value("${ai.deepseek.api-url}")
     private String deepSeekApiUrl;
@@ -58,6 +62,31 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
         for (int attempt = 1; attempt <= retryCount + 1; attempt++) {
             try {
                 return callDeepSeekApi(medicalRecordJson);
+            } catch (Exception e) {
+                log.error("DeepSeek AI调用失败，第{}次尝试", attempt, e);
+                if (attempt > retryCount) {
+                    throw new RuntimeException("DeepSeek AI调用失败，已重试" + retryCount + "次", e);
+                }
+                // 等待一秒后重试
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("重试被中断", ie);
+                }
+            }
+        }
+        
+        throw new RuntimeException("DeepSeek AI调用失败");
+    }
+
+    @Override
+    public AiScoreDebugResponse evaluateMedicalRecordWithDebug(String medicalRecordJson) {
+        log.info("调用DeepSeek AI评估病历记录（包含调试信息）");
+        
+        for (int attempt = 1; attempt <= retryCount + 1; attempt++) {
+            try {
+                return callDeepSeekApiWithDebug(medicalRecordJson);
             } catch (Exception e) {
                 log.error("DeepSeek AI调用失败，第{}次尝试", attempt, e);
                 if (attempt > retryCount) {
@@ -108,7 +137,7 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
         // 系统提示词
         messages.add(Map.of(
                 "role", "system",
-                "content", buildSystemPrompt()
+                "content", promptTemplateService.buildSystemPrompt()
         ));
         
         // 用户输入
@@ -123,86 +152,6 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
                 "temperature", temperature,
                 "max_tokens", maxTokens
         );
-    }
-
-    /**
-     * 构建系统提示词
-     */
-    private String buildSystemPrompt() {
-        return """
-                你是一个专业的医疗质控专家，需要根据病历信息进行评分。请按照以下8个维度进行评分：
-                
-                1. 主诉 (10分)：评估主诉的完整性和规范性
-                2. 病史 (20分)：包括现病史、既往史、过敏史等
-                3. 体格检查 (15分)：评估体格检查记录的完整性
-                4. 辅助检查 (5分)：评估检验检查结果的完整性
-                5. 诊断 (15分)：评估诊断的准确性和完整性
-                6. 处理 (20分)：评估治疗方案的合理性
-                7. 总体评价 (5分)：评估病历的整体质量
-                8. 其他 (10分)：评估其他方面如签名、规范性等
-                
-                请严格按照以下JSON格式返回评分结果，不要包含任何其他文字：
-                {
-                  "totalScore": 总分数字,
-                  "level": "甲级/乙级/丙级",
-                  "details": [
-                    {
-                      "item": "主诉",
-                      "fullScore": 10,
-                      "score": 实际得分,
-                      "deduction": "扣分说明"
-                    },
-                    {
-                      "item": "病史",
-                      "fullScore": 20,
-                      "score": 实际得分,
-                      "deduction": "扣分说明"
-                    },
-                    {
-                      "item": "体格检查",
-                      "fullScore": 15,
-                      "score": 实际得分,
-                      "deduction": "扣分说明"
-                    },
-                    {
-                      "item": "辅助检查",
-                      "fullScore": 5,
-                      "score": 实际得分,
-                      "deduction": "扣分说明"
-                    },
-                    {
-                      "item": "诊断",
-                      "fullScore": 15,
-                      "score": 实际得分,
-                      "deduction": "扣分说明"
-                    },
-                    {
-                      "item": "处理",
-                      "fullScore": 20,
-                      "score": 实际得分,
-                      "deduction": "扣分说明"
-                    },
-                    {
-                      "item": "总体评价",
-                      "fullScore": 5,
-                      "score": 实际得分,
-                      "deduction": "扣分说明"
-                    },
-                    {
-                      "item": "其他",
-                      "fullScore": 10,
-                      "score": 实际得分,
-                      "deduction": "扣分说明"
-                    }
-                  ]
-                }
-                
-                评分标准：
-                - 甲级：90-100分
-                - 乙级：75-89分
-                - 丙级：60-74分
-                - 不合格：60分以下
-                """;
     }
 
     /**
@@ -283,5 +232,210 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
         }
         
         return content.substring(start, end + 1).trim();
+    }
+
+    /**
+     * 调用DeepSeek AI API（包含调试信息）
+     */
+    private AiScoreDebugResponse callDeepSeekApiWithDebug(String medicalRecordJson) {
+        WebClient webClient = webClientBuilder
+                .baseUrl(deepSeekApiUrl)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + deepSeekApiKey)
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+
+        // 构建提示词
+        String systemPrompt = promptTemplateService.buildSystemPrompt();
+        String userPrompt = "请对以下病历进行评分：\n" + medicalRecordJson;
+        
+        Map<String, Object> requestBody = buildRequestBody(medicalRecordJson);
+        
+        // 转换请求体为JSON字符串
+        String requestJson;
+        try {
+            requestJson = objectMapper.writeValueAsString(requestBody);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("序列化请求体失败", e);
+        }
+        
+        Map<String, Object> response = webClient.post()
+                .uri("")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofMillis(timeoutMs))
+                .block();
+
+        // 转换响应为JSON字符串
+        String responseJson;
+        try {
+            responseJson = objectMapper.writeValueAsString(response);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("序列化响应失败", e);
+        }
+
+        // 解析AI响应
+        AiScoreResponse aiResponse = parseAiResponse(response);
+
+        // 构建调试响应
+        AiScoreDebugResponse debugResponse = new AiScoreDebugResponse();
+        debugResponse.setScoreResponse(aiResponse);
+        debugResponse.setAiPrompt(systemPrompt + "\n\n" + userPrompt);
+        debugResponse.setAiRequestJson(requestJson);
+        debugResponse.setAiResponseJson(responseJson);
+
+        return debugResponse;
+    }
+
+    @Override
+    public AiScoreResponse evaluateMedicalRecord(Map<String, Object> patientData, TreatmentInfoDTO treatmentInfo) {
+        log.info("调用DeepSeek AI评估病历记录（结构化数据）");
+        
+        for (int attempt = 1; attempt <= retryCount + 1; attempt++) {
+            try {
+                return callDeepSeekApiWithStructuredData(patientData, treatmentInfo);
+            } catch (Exception e) {
+                log.error("DeepSeek AI调用失败，第{}次尝试", attempt, e);
+                if (attempt > retryCount) {
+                    throw new RuntimeException("DeepSeek AI调用失败，已重试" + retryCount + "次", e);
+                }
+                // 等待一秒后重试
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("重试被中断", ie);
+                }
+            }
+        }
+        
+        throw new RuntimeException("DeepSeek AI调用失败");
+    }
+
+    @Override
+    public AiScoreDebugResponse evaluateMedicalRecordWithDebug(Map<String, Object> patientData, TreatmentInfoDTO treatmentInfo) {
+        log.info("调用DeepSeek AI评估病历记录（结构化数据，包含调试信息）");
+        
+        for (int attempt = 1; attempt <= retryCount + 1; attempt++) {
+            try {
+                return callDeepSeekApiWithStructuredDataAndDebug(patientData, treatmentInfo);
+            } catch (Exception e) {
+                log.error("DeepSeek AI调用失败，第{}次尝试", attempt, e);
+                if (attempt > retryCount) {
+                    throw new RuntimeException("DeepSeek AI调用失败，已重试" + retryCount + "次", e);
+                }
+                // 等待一秒后重试
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("重试被中断", ie);
+                }
+            }
+        }
+        
+        throw new RuntimeException("DeepSeek AI调用失败");
+    }
+
+    /**
+     * 调用DeepSeek AI API（结构化数据）
+     */
+    private AiScoreResponse callDeepSeekApiWithStructuredData(Map<String, Object> patientData, TreatmentInfoDTO treatmentInfo) {
+        WebClient webClient = webClientBuilder
+                .baseUrl(deepSeekApiUrl)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + deepSeekApiKey)
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+
+        Map<String, Object> requestBody = buildRequestBodyWithStructuredData(patientData, treatmentInfo);
+        
+        Map<String, Object> response = webClient.post()
+                .uri("")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofMillis(timeoutMs))
+                .block();
+
+        return parseAiResponse(response);
+    }
+
+    /**
+     * 调用DeepSeek AI API（结构化数据，包含调试信息）
+     */
+    private AiScoreDebugResponse callDeepSeekApiWithStructuredDataAndDebug(Map<String, Object> patientData, TreatmentInfoDTO treatmentInfo) {
+        WebClient webClient = webClientBuilder
+                .baseUrl(deepSeekApiUrl)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + deepSeekApiKey)
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+
+        // 构建提示词
+        String systemPrompt = promptTemplateService.buildSystemPrompt();
+        String userPrompt = promptTemplateService.buildUserPrompt(patientData, treatmentInfo);
+        
+        Map<String, Object> requestBody = buildRequestBodyWithStructuredData(patientData, treatmentInfo);
+        
+        // 转换请求体为JSON字符串
+        String requestJson;
+        try {
+            requestJson = objectMapper.writeValueAsString(requestBody);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("序列化请求体失败", e);
+        }
+        
+        Map<String, Object> response = webClient.post()
+                .uri("")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(Duration.ofMillis(timeoutMs))
+                .block();
+
+        // 转换响应为JSON字符串
+        String responseJson;
+        try {
+            responseJson = objectMapper.writeValueAsString(response);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("序列化响应失败", e);
+        }
+
+        // 解析AI响应
+        AiScoreResponse aiResponse = parseAiResponse(response);
+
+        // 构建调试响应
+        AiScoreDebugResponse debugResponse = new AiScoreDebugResponse();
+        debugResponse.setScoreResponse(aiResponse);
+        debugResponse.setAiPrompt(systemPrompt + "\n\n" + userPrompt);
+        debugResponse.setAiRequestJson(requestJson);
+        debugResponse.setAiResponseJson(responseJson);
+
+        return debugResponse;
+    }
+
+    /**
+     * 构建请求体（结构化数据）
+     */
+    private Map<String, Object> buildRequestBodyWithStructuredData(Map<String, Object> patientData, TreatmentInfoDTO treatmentInfo) {
+        List<Map<String, String>> messages = new ArrayList<>();
+        
+        // 系统提示词
+        messages.add(Map.of(
+                "role", "system",
+                "content", promptTemplateService.buildSystemPrompt()
+        ));
+        
+        // 用户输入 - 使用结构化的提示词模板
+        messages.add(Map.of(
+                "role", "user",
+                "content", promptTemplateService.buildUserPrompt(patientData, treatmentInfo)
+        ));
+
+        return Map.of(
+                "model", deepSeekModel,
+                "messages", messages,
+                "temperature", temperature,
+                "max_tokens", maxTokens
+        );
     }
 } 

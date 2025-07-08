@@ -51,14 +51,12 @@ public class AiScoreServiceImpl implements AiScoreService {
         // 2. 获取诊疗信息
         TreatmentInfoDTO treatmentInfo = hmsApiService.getTreatmentInfo(request.getPatientId());
         
-        // 3. 整合数据 - 传递原始的patientId
-        Map<String, Object> medicalData = buildMedicalData(request.getPatientId(), patientInfo, treatmentInfo);
+        // 3. 获取完整的患者数据
+        Map<String, Object> patientData = hmsApiService.getPatientInfoRaw(request.getPatientId());
         
         try {
-            String medicalDataJson = objectMapper.writeValueAsString(medicalData);
-            
-            // 4. 调用AI评分（包含调试信息）
-            AiScoreDebugResponse debugResponse = deepSeekApiService.evaluateMedicalRecordWithDebug(medicalDataJson);
+            // 4. 调用AI评分（使用结构化数据，包含调试信息）
+            AiScoreDebugResponse debugResponse = deepSeekApiService.evaluateMedicalRecordWithDebug(patientData, treatmentInfo);
             AiScoreResponse aiResponse = debugResponse.getScoreResponse();
             
             // 5. 保存评分结果（包含调试信息）
@@ -67,7 +65,7 @@ public class AiScoreServiceImpl implements AiScoreService {
                 patientInfo.getName(), 
                 aiResponse, 
                 debugResponse,
-                patientInfo,
+                patientData,
                 treatmentInfo
             );
             AiScoreMedicalRecord savedRecord = repository.save(record);
@@ -76,7 +74,7 @@ public class AiScoreServiceImpl implements AiScoreService {
             return savedRecord;
             
         } catch (JsonProcessingException e) {
-            log.error("序列化病历数据失败", e);
+            log.error("序列化数据失败，患者ID: {}", request.getPatientId(), e);
             throw new RuntimeException("数据处理失败", e);
         }
     }
@@ -113,21 +111,6 @@ public class AiScoreServiceImpl implements AiScoreService {
     }
     
     /**
-     * 构建病历数据
-     */
-    private Map<String, Object> buildMedicalData(Long patientId, PatientInfoDTO patientInfo, TreatmentInfoDTO treatmentInfo) {
-        // 获取第一个API的完整原始数据 - 使用原始的patientId
-        Map<String, Object> patientData = hmsApiService.getPatientInfoRaw(patientId);
-        
-        // 添加第二个API的initDiagnosis字段
-        if (treatmentInfo != null && treatmentInfo.getInitDiagnosis() != null) {
-            patientData.put("initDiagnosis", treatmentInfo.getInitDiagnosis());
-        }
-        
-        return patientData;
-    }
-    
-    /**
      * 构建评分记录
      */
     private AiScoreMedicalRecord buildScoreRecord(Long patientId, String patientName, AiScoreResponse aiResponse) throws JsonProcessingException {
@@ -149,7 +132,7 @@ public class AiScoreServiceImpl implements AiScoreService {
             String patientName, 
             AiScoreResponse aiResponse, 
             AiScoreDebugResponse debugResponse,
-            PatientInfoDTO patientInfo,
+            Map<String, Object> patientData,
             TreatmentInfoDTO treatmentInfo) throws JsonProcessingException {
         
         AiScoreMedicalRecord record = new AiScoreMedicalRecord();
@@ -166,9 +149,8 @@ public class AiScoreServiceImpl implements AiScoreService {
         record.setAiResponseJson(debugResponse.getAiResponseJson());
         
         // 保存患者基本信息和诊疗信息 - 使用原始的patientId而不是patientInfo.getId()
-        if (patientInfo != null) {
-            Map<String, Object> patientBasicInfo = hmsApiService.getPatientInfoRaw(patientId);
-            record.setPatientBasicInfo(objectMapper.writeValueAsString(patientBasicInfo));
+        if (patientData != null) {
+            record.setPatientBasicInfo(objectMapper.writeValueAsString(patientData));
         }
         
         if (treatmentInfo != null) {

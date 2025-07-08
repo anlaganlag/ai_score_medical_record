@@ -125,7 +125,7 @@ systemdeptid: {deptId}
 
 Request Body:
 {
-    "patientId": 225
+    "patientId": 3835
 }
 
 Response:
@@ -133,7 +133,7 @@ Response:
     "code": 0,
     "data": {
         "id": 1,
-        "patientId": 225,
+        "patientId": 3835,
         "status": "processing" // processing/completed/failed
     },
     "msg": "评分任务已提交"
@@ -151,8 +151,8 @@ Response:
     "code": 0,
     "data": {
         "id": 1,
-        "patientId": 225,
-        "patientName": "叶金铃",
+        "patientId": 3835,
+        "patientName": "胡安秀",
         "scoreResult": {
             "totalScore": 70,
             "level": "乙级",
@@ -183,7 +183,7 @@ systemdeptid: {deptId}
 
 Request Body:
 {
-    "patientId": 225,
+    "patientId": 3835,
     "expertComment": "专家点评内容"
 }
 
@@ -199,8 +199,8 @@ Response:
 
 #### 5.2.1 获取患者信息
 ```
-GET http://172.16.1.13:10086/admin-api/business/patient/get?id={patientId}
-Authorization: Bearer d440578b-5ab3-4254-adf9-d9527503ae84
+GET http://172.16.1.13:10086/admin-api/business/outpatient-blood/get?patientId=3835
+Authorization: Bearer 5b09fa6b-5c71-409c-9622-24d5614e1a8b
 systemdeptid: 100
 ```
 
@@ -208,12 +208,12 @@ systemdeptid: 100
 ```
 POST http://172.16.1.13:10086/admin-api/business/first-course-record/get
 Content-Type: application/json
-Authorization: Bearer d440578b-5ab3-4254-adf9-d9527503ae84
+Authorization: Bearer 5b09fa6b-5c71-409c-9622-24d5614e1a8b
 systemdeptid: 100
 
 Request Body:
 {
-    "patientId": 225
+    "patientId": 3835
 }
 ```
 
@@ -393,8 +393,8 @@ Request Body:
 ## 9. 测试策略
 
 ### 9.1 测试数据
-- **主要测试患者ID**：225
-- **其他测试ID**：255, 256, 258, 259, 326
+- **主要测试患者ID**：3835
+- **其他测试ID**3945, 4360, 4913, 4376
 
 ### 9.2 测试用例
 1. **正常流程测试**
@@ -440,7 +440,7 @@ ai:
   
   hms:
     api-url: http://172.16.1.13:10086
-    token: d440578b-5ab3-4254-adf9-d9527503ae84
+    token: 5b09fa6b-5c71-409c-9622-24d5614e1a8b
     dept-id: 100
 ```
 
