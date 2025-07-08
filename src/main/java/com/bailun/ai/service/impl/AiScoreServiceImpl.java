@@ -2,6 +2,7 @@ package com.bailun.ai.service.impl;
 
 import com.bailun.ai.dto.AiScoreRequest;
 import com.bailun.ai.dto.AiScoreResponse;
+import com.bailun.ai.dto.AiScoreDebugResponse;
 import com.bailun.ai.dto.PatientInfoDTO;
 import com.bailun.ai.dto.TreatmentInfoDTO;
 import com.bailun.ai.entity.AiScoreMedicalRecord;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,7 +35,7 @@ public class AiScoreServiceImpl implements AiScoreService {
     private final ObjectMapper objectMapper;
     
     private static final int MAX_COMMENT_LENGTH = 100;
-    private static final String AI_MODEL = "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B";
+    private static final String AI_MODEL = "Qwen/Qwen3-8B";
 
     @Override
     @Transactional
@@ -49,17 +51,25 @@ public class AiScoreServiceImpl implements AiScoreService {
         // 2. 获取诊疗信息
         TreatmentInfoDTO treatmentInfo = hmsApiService.getTreatmentInfo(request.getPatientId());
         
-        // 3. 整合数据
-        Map<String, Object> medicalData = buildMedicalData(patientInfo, treatmentInfo);
+        // 3. 整合数据 - 传递原始的patientId
+        Map<String, Object> medicalData = buildMedicalData(request.getPatientId(), patientInfo, treatmentInfo);
         
         try {
             String medicalDataJson = objectMapper.writeValueAsString(medicalData);
             
-            // 4. 调用AI评分
-            AiScoreResponse aiResponse = deepSeekApiService.evaluateMedicalRecord(medicalDataJson);
+            // 4. 调用AI评分（包含调试信息）
+            AiScoreDebugResponse debugResponse = deepSeekApiService.evaluateMedicalRecordWithDebug(medicalDataJson);
+            AiScoreResponse aiResponse = debugResponse.getScoreResponse();
             
-            // 5. 保存评分结果
-            AiScoreMedicalRecord record = buildScoreRecord(request.getPatientId(), patientInfo.getName(), aiResponse);
+            // 5. 保存评分结果（包含调试信息）
+            AiScoreMedicalRecord record = buildScoreRecordWithDebug(
+                request.getPatientId(), 
+                patientInfo.getName(), 
+                aiResponse, 
+                debugResponse,
+                patientInfo,
+                treatmentInfo
+            );
             AiScoreMedicalRecord savedRecord = repository.save(record);
             
             log.info("AI评分生成完成，患者ID: {}, 总分: {}", request.getPatientId(), aiResponse.getTotalScore());
@@ -74,7 +84,9 @@ public class AiScoreServiceImpl implements AiScoreService {
     @Override
     public AiScoreMedicalRecord getAiScoreReport(Long patientId) {
         log.info("获取AI评分报告，患者ID: {}", patientId);
-        return repository.findByPatientIdAndDeletedFalse(patientId).orElse(null);
+        // 获取所有记录，然后取最新的一条，避免NonUniqueResultException
+        List<AiScoreMedicalRecord> records = repository.findAllByPatientIdAndDeletedFalseOrderByCreatedTimeDesc(patientId);
+        return records.isEmpty() ? null : records.get(0);
     }
 
     @Override
@@ -87,84 +99,32 @@ public class AiScoreServiceImpl implements AiScoreService {
             throw new IllegalArgumentException("专家点评不能超过" + MAX_COMMENT_LENGTH + "字");
         }
         
-        return repository.findByPatientIdAndDeletedFalse(patientId)
-                .map(record -> {
-                    record.setExpertComment(expertComment);
-                    repository.save(record);
-                    log.info("专家点评保存成功，患者ID: {}", patientId);
-                    return true;
-                })
-                .orElse(false);
+        // 获取所有记录，然后取最新的一条，避免NonUniqueResultException
+        List<AiScoreMedicalRecord> records = repository.findAllByPatientIdAndDeletedFalseOrderByCreatedTimeDesc(patientId);
+        if (records.isEmpty()) {
+            return false;
+        }
+        
+        AiScoreMedicalRecord record = records.get(0);
+        record.setExpertComment(expertComment);
+        repository.save(record);
+        log.info("专家点评保存成功，患者ID: {}", patientId);
+        return true;
     }
     
     /**
      * 构建病历数据
      */
-    private Map<String, Object> buildMedicalData(PatientInfoDTO patientInfo, TreatmentInfoDTO treatmentInfo) {
-        Map<String, Object> data = new HashMap<>();
+    private Map<String, Object> buildMedicalData(Long patientId, PatientInfoDTO patientInfo, TreatmentInfoDTO treatmentInfo) {
+        // 获取第一个API的完整原始数据 - 使用原始的patientId
+        Map<String, Object> patientData = hmsApiService.getPatientInfoRaw(patientId);
         
-        // 基本信息
-        data.put("patientId", patientInfo.getId());
-        data.put("patientName", patientInfo.getName());
-        
-        // 主诉 (10分)
-        if (treatmentInfo != null) {
-            data.put("mainSuit", treatmentInfo.getMainSuit());
+        // 添加第二个API的initDiagnosis字段
+        if (treatmentInfo != null && treatmentInfo.getInitDiagnosis() != null) {
+            patientData.put("initDiagnosis", treatmentInfo.getInitDiagnosis());
         }
         
-        // 病史 (20分)
-        data.put("allergy", patientInfo.getAllergy());
-        data.put("tumor", patientInfo.getTumor());
-        data.put("smoking", patientInfo.getSmoking());
-        data.put("tipple", patientInfo.getTipple());
-        data.put("dialyzeAge", patientInfo.getDialyzeAge());
-        data.put("firstReceiveTime", patientInfo.getFirstReceiveTime());
-        if (treatmentInfo != null) {
-            data.put("nowDiseaseHistory", treatmentInfo.getNowDiseaseHistory());
-            data.put("oldDiseaseHistory", treatmentInfo.getOldDiseaseHistory());
-        }
-        
-        // 体格检查 (15分)
-        data.put("stature", patientInfo.getStature());
-        data.put("initWeight", patientInfo.getInitWeight());
-        data.put("eyesight", patientInfo.getEyesight());
-        if (treatmentInfo != null) {
-            data.put("weightPre", treatmentInfo.getWeightPre());
-            data.put("pressurePre", treatmentInfo.getPressurePre());
-            data.put("bodyInspect", treatmentInfo.getBodyInspect());
-        }
-        
-        // 辅助检查 (5分)
-        data.put("bloodType", patientInfo.getBloodType());
-        data.put("rh", patientInfo.getRh());
-        data.put("erythrocyte", patientInfo.getErythrocyte());
-        if (treatmentInfo != null) {
-            data.put("assayInspect", treatmentInfo.getAssayInspect());
-        }
-        
-        // 诊断 (15分)
-        if (treatmentInfo != null) {
-            data.put("diagnosis", treatmentInfo.getDiagnosis());
-            data.put("diseaseReasonNames", treatmentInfo.getDiseaseReasonNames());
-            data.put("initDiagnosis", treatmentInfo.getInitDiagnosis());
-        }
-        
-        // 处理 (20分)
-        if (treatmentInfo != null) {
-            data.put("dialysisPlan", treatmentInfo.getDialysisPlan());
-            data.put("healingProject", treatmentInfo.getHealingProject());
-            data.put("medic", treatmentInfo.getMedic());
-            data.put("nurse", treatmentInfo.getNurse());
-            data.put("facilityName", treatmentInfo.getFacilityName());
-            data.put("startDialyzeTime", treatmentInfo.getStartDialyzeTime());
-            data.put("endDialyzeTime", treatmentInfo.getEndDialyzeTime());
-        }
-        
-        // 总体评价 (5分)
-        data.put("state", patientInfo.getState());
-        data.put("signature", patientInfo.getSignature());
-        
-        return data;
+        return patientData;
     }
     
     /**
@@ -178,6 +138,43 @@ public class AiScoreServiceImpl implements AiScoreService {
         record.setScoreLevel(aiResponse.getLevel());
         record.setScoreResult(objectMapper.writeValueAsString(aiResponse));
         record.setAiModel(AI_MODEL);
+        return record;
+    }
+    
+    /**
+     * 构建评分记录（包含调试信息）
+     */
+    private AiScoreMedicalRecord buildScoreRecordWithDebug(
+            Long patientId, 
+            String patientName, 
+            AiScoreResponse aiResponse, 
+            AiScoreDebugResponse debugResponse,
+            PatientInfoDTO patientInfo,
+            TreatmentInfoDTO treatmentInfo) throws JsonProcessingException {
+        
+        AiScoreMedicalRecord record = new AiScoreMedicalRecord();
+        record.setPatientId(patientId);
+        record.setPatientName(patientName);
+        record.setScoreTotal(aiResponse.getTotalScore());
+        record.setScoreLevel(aiResponse.getLevel());
+        record.setScoreResult(objectMapper.writeValueAsString(aiResponse));
+        record.setAiModel(AI_MODEL);
+        
+        // 保存调试信息
+        record.setAiPrompt(debugResponse.getAiPrompt());
+        record.setAiRequestJson(debugResponse.getAiRequestJson());
+        record.setAiResponseJson(debugResponse.getAiResponseJson());
+        
+        // 保存患者基本信息和诊疗信息 - 使用原始的patientId而不是patientInfo.getId()
+        if (patientInfo != null) {
+            Map<String, Object> patientBasicInfo = hmsApiService.getPatientInfoRaw(patientId);
+            record.setPatientBasicInfo(objectMapper.writeValueAsString(patientBasicInfo));
+        }
+        
+        if (treatmentInfo != null) {
+            record.setTreatmentInfo(objectMapper.writeValueAsString(treatmentInfo));
+        }
+        
         return record;
     }
 } 

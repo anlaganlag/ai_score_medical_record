@@ -55,8 +55,8 @@ ai:
   
   hms:
     api-url: http://172.16.1.13:10086
-    token: d440578b-5ab3-4254-adf9-d9527503ae84
-    dept-id: 100
+    token: 5b09fa6b-5c71-409c-9622-24d5614e1a8b
+    dept-id: 127
 
 # 日志配置
 logging:
