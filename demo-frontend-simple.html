@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI医疗质控系统 - 简化测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .button { background: #007acc; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        .button:hover { background: #005a9e; }
+        .result { background: #f5f5f5; padding: 15px; border-radius: 4px; margin: 10px 0; max-height: 400px; overflow-y: auto; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 AI医疗质控系统 - 简化测试</h1>
+        
+        <div>
+            <label>患者ID: <input type="number" id="patientId" value="225" min="1"></label>
+        </div>
+        
+        <button class="button" onclick="testAPI()">测试API连接</button>
+        <button class="button" onclick="fetchReport()">获取评分报告</button>
+        <button class="button" onclick="generateScore()">生成AI评分</button>
+        
+        <div id="result" class="result">点击按钮开始测试...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/admin-api/business/ai-score';
+        
+        function log(message, type = 'info') {
+            const result = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            result.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            result.scrollTop = result.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('result').innerHTML = '';
+        }
+        
+        async function testAPI() {
+            clearLog();
+            log('开始测试API连接...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/report/225`, {
+                    method: 'GET',
+                    mode: 'cors', // 明确指定CORS模式
+                    credentials: 'include', // 包含凭据
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                log(`HTTP状态: ${response.status} ${response.statusText}`, 'info');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('API连接成功！', 'success');
+                    log(`响应数据: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log(`API返回错误: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`连接失败: ${error.message}`, 'error');
+                log('可能的原因:', 'error');
+                log('1. 后端服务未启动 (检查 http://localhost:8080)', 'error');
+                log('2. CORS配置问题', 'error');
+                log('3. 网络连接问题', 'error');
+            }
+        }
+        
+        async function fetchReport() {
+            const patientId = document.getElementById('patientId').value;
+            clearLog();
+            log(`正在获取患者${patientId}的评分报告...`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/report/${patientId}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.code === 0) {
+                        log('评分报告获取成功！', 'success');
+                        log(`患者姓名: ${data.data.patientName}`);
+                        log(`总分: ${data.data.scoreResult?.totalScore || '未知'}`);
+                        log(`等级: ${data.data.scoreResult?.level || '未知'}`);
+                        log(`完整数据: ${JSON.stringify(data, null, 2)}`);
+                    } else {
+                        log(`服务器返回错误: ${data.msg}`, 'error');
+                    }
+                } else {
+                    log(`HTTP错误: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`请求失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function generateScore() {
+            const patientId = document.getElementById('patientId').value;
+            clearLog();
+            log(`正在为患者${patientId}生成AI评分...`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/generate`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patientId: parseInt(patientId)
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.code === 0) {
+                        log('AI评分生成成功！', 'success');
+                        log(`评分ID: ${data.data.id}`);
+                        log('3秒后自动获取报告...');
+                        setTimeout(fetchReport, 3000);
+                    } else {
+                        log(`生成失败: ${data.msg}`, 'error');
+                    }
+                } else {
+                    log(`HTTP错误: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`请求失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 页面加载完成后自动测试
+        window.onload = function() {
+            log('页面加载完成，准备测试API连接...');
+            setTimeout(testAPI, 1000);
+        };
+    </script>
+</body>
+</html> 

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI医疗质控系统 - 演示页面</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        .patient-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        .score-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .score-number {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        .comment-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .json-viewer {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .json-key {
+            color: #569cd6;
+        }
+        .json-string {
+            color: #ce9178;
+        }
+        .json-number {
+            color: #b5cea8;
+        }
+        .json-boolean {
+            color: #569cd6;
+        }
+        .json-null {
+            color: #569cd6;
+        }
+        .json-punctuation {
+            color: #d4d4d4;
+        }
+        .json-expandable {
+            cursor: pointer;
+            user-select: none;
+        }
+        .json-expanded::before {
+            content: '▼ ';
+            color: #808080;
+        }
+        .json-collapsed::before {
+            content: '▶ ';
+            color: #808080;
+        }
+        .json-hidden {
+            display: none;
+        }
+        .json-copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .json-copy-btn:hover {
+            background: #005a9e;
+        }
+        .json-container {
+            position: relative;
+        }
+        .json-tree {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .json-tree-item {
+            margin-left: 15px;
+        }
+        .json-tree-toggle {
+            cursor: pointer;
+            user-select: none;
+            color: #808080;
+            margin-right: 5px;
+        }
+        .json-tree-key {
+            color: #569cd6;
+            font-weight: bold;
+        }
+        .json-tree-value {
+            margin-left: 5px;
+        }
+        .json-tree-string {
+            color: #ce9178;
+        }
+        .json-tree-number {
+            color: #b5cea8;
+        }
+        .json-tree-boolean {
+            color: #569cd6;
+        }
+        .json-tree-null {
+            color: #569cd6;
+        }
+        .json-search-box {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 11px;
+            width: 150px;
+        }
+        .json-highlight {
+            background-color: #ffff00 !important;
+            color: #000 !important;
+        }
+        .json-viewer pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .json-container .json-search-box:focus {
+            outline: none;
+            border-color: #007acc;
+            box-shadow: 0 0 5px rgba(0, 122, 204, 0.3);
+        }
+        .json-stats {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <!-- 页面标题 -->
+            <div class="header">
+                <h1>🏥 AI医疗质控系统演示</h1>
+                <p>智能病历评分与专家点评系统</p>
+            </div>
+
+            <!-- 患者信息卡片 -->
+            <div class="patient-card">
+                <h2>👤 患者信息</h2>
+                <el-row :gutter="20">
+                    <el-col :span="6">
+                        <div class="detail-item">
+                            <strong>患者ID:</strong>
+                            <el-input-number v-model="patientId" :min="1" size="small"></el-input-number>
+                        </div>
+                    </el-col>
+                    <el-col :span="6">
+                        <div class="detail-item">
+                            <strong>患者姓名:</strong>
+                            <span>{{ reportData.patientName || '未获取' }}</span>
+                        </div>
+                    </el-col>
+                    <el-col :span="12">
+                        <div class="detail-item">
+                            <el-button type="primary" @click="generateScore" :loading="generating">
+                                <i class="el-icon-cpu"></i> 生成AI评分
+                            </el-button>
+                            <el-button type="success" @click="viewReport" :loading="loading">
+                                <i class="el-icon-view"></i> 查看报告
+                            </el-button>
+                        </div>
+                    </el-col>
+                </el-row>
+            </div>
+
+            <!-- 评分结果卡片 -->
+            <div v-if="reportData.scoreResult" class="score-card">
+                <h2>📊 AI评分结果</h2>
+                <div class="score-number">{{ reportData.scoreResult.totalScore }}</div>
+                <el-tag :type="getScoreTagType(reportData.scoreResult.totalScore)" size="large">
+                    {{ reportData.scoreResult.level }}
+                </el-tag>
+                <p style="margin-top: 10px; opacity: 0.9;">
+                    生成时间: {{ formatTime(reportData.createdTime) }}
+                </p>
+            </div>
+
+            <!-- 详细评分 -->
+            <div v-if="reportData.scoreResult" class="patient-card">
+                <h3>📋 详细评分</h3>
+                <div v-for="detail in reportData.scoreResult.details" :key="detail.item" class="detail-item">
+                    <div style="flex: 1;">
+                        <strong>{{ detail.item }}</strong>
+                        <p style="margin: 5px 0; color: #666; font-size: 14px;">{{ detail.deduction }}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <el-progress 
+                            :percentage="(detail.score / detail.fullScore * 100)" 
+                            :color="getProgressColor(detail.score / detail.fullScore * 100)"
+                            :stroke-width="8"
+                            style="width: 150px;">
+                        </el-progress>
+                        <div style="margin-top: 5px;">{{ detail.score }}/{{ detail.fullScore }}分</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI提示词调试信息 -->
+            <div v-if="reportData.aiPrompt" class="patient-card">
+                <h3>🤖 AI提示词 (调试信息)</h3>
+                <el-collapse>
+                    <el-collapse-item title="查看完整提示词" name="prompt">
+                        <div class="json-container">
+                            <button class="json-copy-btn" @click="copyToClipboard(reportData.aiPrompt)">复制</button>
+                            <div class="json-viewer">
+                                <pre style="white-space: pre-wrap; margin: 0;">{{ reportData.aiPrompt }}</pre>
+                            </div>
+                        </div>
+                    </el-collapse-item>
+                </el-collapse>
+            </div>
+
+            <!-- 患者数据调试信息 -->
+            <div v-if="reportData.patientBasicInfo || reportData.treatmentInfo" class="patient-card">
+                <h3>👤 患者数据调试信息</h3>
+                <el-collapse>
+                    <el-collapse-item v-if="reportData.patientBasicInfo" title="患者基本信息 (接口1)" name="patient-basic">
+                        <div class="json-container">
+                            <input type="text" class="json-search-box" placeholder="搜索..." v-model="searchTerm" @input="highlightSearch">
+                            <button class="json-copy-btn" @click="copyToClipboard(reportData.patientBasicInfo)">复制</button>
+                            <div class="json-stats">{{ getJsonStats(reportData.patientBasicInfo) }}</div>
+                            <div class="json-viewer">
+                                <pre v-html="renderPrettyJson(reportData.patientBasicInfo)" style="margin: 0;"></pre>
+                            </div>
+                        </div>
+                    </el-collapse-item>
+                    <el-collapse-item v-if="reportData.treatmentInfo" title="初始诊疗信息 (接口2)" name="treatment-info">
+                        <div class="json-container">
+                            <input type="text" class="json-search-box" placeholder="搜索..." v-model="searchTerm" @input="highlightSearch">
+                            <button class="json-copy-btn" @click="copyToClipboard(reportData.treatmentInfo)">复制</button>
+                            <div class="json-stats">{{ getJsonStats(reportData.treatmentInfo) }}</div>
+                            <div class="json-viewer">
+                                <pre v-html="renderPrettyJson(reportData.treatmentInfo)" style="margin: 0;"></pre>
+                            </div>
+                        </div>
+                    </el-collapse-item>
+                </el-collapse>
+            </div>
+
+            <!-- AI请求/响应调试信息 -->
+            <div v-if="reportData.aiRequestJson || reportData.aiResponseJson" class="patient-card">
+                <h3>🔧 AI调试信息</h3>
+                <el-collapse>
+                    <el-collapse-item v-if="reportData.aiRequestJson" title="AI请求JSON" name="request">
+                        <div class="json-container">
+                            <input type="text" class="json-search-box" placeholder="搜索..." v-model="searchTerm" @input="highlightSearch">
+                            <button class="json-copy-btn" @click="copyToClipboard(reportData.aiRequestJson)">复制</button>
+                            <div class="json-stats">{{ getJsonStats(reportData.aiRequestJson) }}</div>
+                            <div class="json-viewer">
+                                <pre v-html="renderPrettyJson(reportData.aiRequestJson)" style="margin: 0;"></pre>
+                            </div>
+                        </div>
+                    </el-collapse-item>
+                    <el-collapse-item v-if="reportData.aiResponseJson" title="AI响应JSON" name="response">
+                        <div class="json-container">
+                            <input type="text" class="json-search-box" placeholder="搜索..." v-model="searchTerm" @input="highlightSearch">
+                            <button class="json-copy-btn" @click="copyToClipboard(reportData.aiResponseJson)">复制</button>
+                            <div class="json-stats">{{ getJsonStats(reportData.aiResponseJson) }}</div>
+                            <div class="json-viewer">
+                                <pre v-html="renderPrettyJson(reportData.aiResponseJson)" style="margin: 0;"></pre>
+                            </div>
+                        </div>
+                    </el-collapse-item>
+                </el-collapse>
+            </div>
+
+            <!-- 专家点评 -->
+            <div v-if="reportData.scoreResult" class="patient-card">
+                <h3>👨‍⚕️ 专家点评</h3>
+                <div v-if="!editingComment" class="comment-section">
+                    <p v-if="reportData.expertComment">{{ reportData.expertComment }}</p>
+                    <p v-else style="color: #999; text-align: center;">暂无专家点评</p>
+                    <el-button type="text" @click="startEditComment">
+                        {{ reportData.expertComment ? '编辑点评' : '添加点评' }}
+                    </el-button>
+                </div>
+                <div v-else class="comment-section">
+                    <el-input
+                        type="textarea"
+                        v-model="newComment"
+                        :rows="4"
+                        placeholder="请输入专家点评..."
+                        maxlength="500"
+                        show-word-limit>
+                    </el-input>
+                    <div style="margin-top: 10px; text-align: right;">
+                        <el-button @click="cancelEditComment">取消</el-button>
+                        <el-button type="primary" @click="saveComment" :loading="savingComment">保存</el-button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作日志 -->
+            <div class="patient-card">
+                <h3>📝 操作日志</h3>
+                <div v-for="(log, index) in operationLogs" :key="index" style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>{{ log.message }}</span>
+                        <small style="color: #999;">{{ log.time }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                patientId: 225,
+                reportData: {},
+                generating: false,
+                loading: false,
+                savingComment: false,
+                editingComment: false,
+                newComment: '',
+                operationLogs: [],
+                searchTerm: ''
+            },
+            mounted() {
+                this.addLog('页面加载完成');
+                this.viewReport();
+            },
+            methods: {
+                async generateScore() {
+                    this.generating = true;
+                    this.addLog(`开始为患者${this.patientId}生成AI评分...`);
+                    
+                    try {
+                        const response = await axios.post('http://localhost:8080/admin-api/business/ai-score/generate', {
+                            patientId: this.patientId
+                        });
+                        
+                        if (response.data.code === 0) {
+                            this.$message.success('AI评分生成成功！');
+                            this.addLog('AI评分生成成功');
+                            // 生成成功后自动加载报告
+                            setTimeout(() => {
+                                this.viewReport();
+                            }, 1000);
+                        } else {
+                            this.$message.error(response.data.msg || 'AI评分生成失败');
+                            this.addLog(`AI评分生成失败: ${response.data.msg}`);
+                        }
+                    } catch (error) {
+                        console.error('生成AI评分失败:', error);
+                        this.$message.error('网络异常，请检查后端服务是否正常运行');
+                        this.addLog(`网络异常: ${error.message}`);
+                    } finally {
+                        this.generating = false;
+                    }
+                },
+
+                async viewReport() {
+                    this.loading = true;
+                    this.addLog(`正在获取患者${this.patientId}的评分报告...`);
+                    
+                    try {
+                        const response = await axios.get(`http://localhost:8080/admin-api/business/ai-score/report/${this.patientId}`);
+                        
+                        if (response.data.code === 0) {
+                            this.reportData = response.data.data;
+                            this.$message.success('评分报告加载成功！');
+                            this.addLog(`评分报告加载成功，总分: ${this.reportData.scoreResult.totalScore}分`);
+                        } else {
+                            this.$message.warning(response.data.msg || '未找到评分报告');
+                            this.addLog(`未找到评分报告: ${response.data.msg}`);
+                        }
+                    } catch (error) {
+                        console.error('获取评分报告失败:', error);
+                        this.$message.error('网络异常，请检查后端服务是否正常运行');
+                        this.addLog(`网络异常: ${error.message}`);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                startEditComment() {
+                    this.editingComment = true;
+                    this.newComment = this.reportData.expertComment || '';
+                },
+
+                cancelEditComment() {
+                    this.editingComment = false;
+                    this.newComment = '';
+                },
+
+                async saveComment() {
+                    if (!this.newComment.trim()) {
+                        this.$message.warning('请输入点评内容');
+                        return;
+                    }
+
+                    this.savingComment = true;
+                    this.addLog('正在保存专家点评...');
+                    
+                    try {
+                        const response = await axios.post('http://localhost:8080/admin-api/business/ai-score/expert-comment', {
+                            patientId: this.patientId,
+                            expertComment: this.newComment.trim()
+                        });
+                        
+                        if (response.data.code === 0) {
+                            this.reportData.expertComment = this.newComment.trim();
+                            this.editingComment = false;
+                            this.$message.success('专家点评保存成功！');
+                            this.addLog('专家点评保存成功');
+                        } else {
+                            this.$message.error(response.data.msg || '专家点评保存失败');
+                            this.addLog(`专家点评保存失败: ${response.data.msg}`);
+                        }
+                    } catch (error) {
+                        console.error('保存专家点评失败:', error);
+                        this.$message.error('网络异常，请检查后端服务是否正常运行');
+                        this.addLog(`网络异常: ${error.message}`);
+                    } finally {
+                        this.savingComment = false;
+                    }
+                },
+
+                getScoreTagType(score) {
+                    if (score >= 90) return 'success';
+                    if (score >= 75) return 'primary';
+                    if (score >= 60) return 'warning';
+                    return 'danger';
+                },
+
+                getProgressColor(percentage) {
+                    if (percentage >= 90) return '#67c23a';
+                    if (percentage >= 75) return '#409eff';
+                    if (percentage >= 60) return '#e6a23c';
+                    return '#f56c6c';
+                },
+
+                formatTime(time) {
+                    if (!time) return '';
+                    return new Date(time).toLocaleString('zh-CN');
+                },
+
+                addLog(message) {
+                    this.operationLogs.unshift({
+                        message: message,
+                        time: new Date().toLocaleTimeString()
+                    });
+                    // 保留最新的10条日志
+                    if (this.operationLogs.length > 10) {
+                        this.operationLogs = this.operationLogs.slice(0, 10);
+                    }
+                },
+
+                formatJson(jsonString) {
+                    try {
+                        if (typeof jsonString === 'string') {
+                            return JSON.stringify(JSON.parse(jsonString), null, 2);
+                        }
+                        return JSON.stringify(jsonString, null, 2);
+                    } catch (e) {
+                        return jsonString;
+                    }
+                },
+
+                renderJsonWithHighlight(jsonString) {
+                    try {
+                        let jsonObj;
+                        if (typeof jsonString === 'string') {
+                            jsonObj = JSON.parse(jsonString);
+                        } else {
+                            jsonObj = jsonString;
+                        }
+                        return this.syntaxHighlight(JSON.stringify(jsonObj, null, 2));
+                    } catch (e) {
+                        return `<pre>${jsonString}</pre>`;
+                    }
+                },
+
+                syntaxHighlight(json) {
+                    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                        var cls = 'json-number';
+                        if (/^"/.test(match)) {
+                            if (/:$/.test(match)) {
+                                cls = 'json-key';
+                            } else {
+                                cls = 'json-string';
+                            }
+                        } else if (/true|false/.test(match)) {
+                            cls = 'json-boolean';
+                        } else if (/null/.test(match)) {
+                            cls = 'json-null';
+                        }
+                        return '<span class="' + cls + '">' + match + '</span>';
+                    }).replace(/([{}[\],])/g, '<span class="json-punctuation">$1</span>');
+                },
+
+                copyToClipboard(text) {
+                    try {
+                        let textToCopy = text;
+                        if (typeof text === 'object') {
+                            textToCopy = JSON.stringify(text, null, 2);
+                        }
+                        navigator.clipboard.writeText(textToCopy).then(() => {
+                            this.$message.success('内容已复制到剪贴板');
+                        }).catch(() => {
+                            // Fallback for older browsers
+                            const textArea = document.createElement('textarea');
+                            textArea.value = textToCopy;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                            this.$message.success('内容已复制到剪贴板');
+                        });
+                    } catch (e) {
+                        this.$message.error('复制失败：' + e.message);
+                    }
+                },
+
+                renderPrettyJson(jsonString) {
+                    try {
+                        let jsonObj;
+                        if (typeof jsonString === 'string') {
+                            jsonObj = JSON.parse(jsonString);
+                        } else {
+                            jsonObj = jsonString;
+                        }
+                        
+                        let prettyJson = JSON.stringify(jsonObj, null, 2);
+                        
+                        // 语法高亮
+                        prettyJson = prettyJson
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                                let cls = 'json-number';
+                                if (/^"/.test(match)) {
+                                    if (/:$/.test(match)) {
+                                        cls = 'json-key';
+                                    } else {
+                                        cls = 'json-string';
+                                    }
+                                } else if (/true|false/.test(match)) {
+                                    cls = 'json-boolean';
+                                } else if (/null/.test(match)) {
+                                    cls = 'json-null';
+                                }
+                                return '<span class="' + cls + '">' + match + '</span>';
+                            })
+                            .replace(/([{}[\],])/g, '<span class="json-punctuation">$1</span>');
+                        
+                        // 搜索高亮
+                        if (this.searchTerm && this.searchTerm.trim()) {
+                            const regex = new RegExp(`(${this.escapeRegExp(this.searchTerm.trim())})`, 'gi');
+                            prettyJson = prettyJson.replace(regex, '<mark class="json-highlight">$1</mark>');
+                        }
+                        
+                        return prettyJson;
+                    } catch (e) {
+                        return `<span style="color: #ff6b6b;">JSON 解析错误: ${e.message}</span><br/><br/>${jsonString}`;
+                    }
+                },
+
+                escapeRegExp(string) {
+                    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                },
+
+                highlightSearch() {
+                    // 触发重新渲染
+                    this.$forceUpdate();
+                },
+
+                getJsonStats(jsonString) {
+                    try {
+                        let jsonObj;
+                        if (typeof jsonString === 'string') {
+                            jsonObj = JSON.parse(jsonString);
+                        } else {
+                            jsonObj = jsonString;
+                        }
+                        
+                        const jsonStr = JSON.stringify(jsonObj);
+                        const lines = JSON.stringify(jsonObj, null, 2).split('\n').length;
+                        const size = new Blob([jsonStr]).size;
+                        const keys = this.countKeys(jsonObj);
+                        
+                        let sizeStr = size < 1024 ? `${size}B` : 
+                                     size < 1024 * 1024 ? `${(size/1024).toFixed(1)}KB` : 
+                                     `${(size/(1024*1024)).toFixed(1)}MB`;
+                        
+                        return `${lines} 行 | ${keys} 键 | ${sizeStr}`;
+                    } catch (e) {
+                        return '无效 JSON';
+                    }
+                },
+
+                countKeys(obj) {
+                    let count = 0;
+                    if (obj && typeof obj === 'object') {
+                        if (Array.isArray(obj)) {
+                            obj.forEach(item => count += this.countKeys(item));
+                        } else {
+                            count += Object.keys(obj).length;
+                            Object.values(obj).forEach(value => count += this.countKeys(value));
+                        }
+                    }
+                    return count;
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
