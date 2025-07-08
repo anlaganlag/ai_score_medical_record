@@ -47,7 +47,7 @@ ai:
   deepseek:
     api-url: https://api.siliconflow.cn/v1/chat/completions
     api-key: sk-stwdcstqnkcztrsqsrmosrcpekiacrualyzzvsgfmzjvuurv
-    model: deepseek-ai/DeepSeek-R1
+    model: Qwen/Qwen3-8B
     retry-count: 1
     timeout: 600000
     temperature: 0.1

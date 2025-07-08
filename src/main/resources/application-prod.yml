@@ -66,7 +66,8 @@ ai:
   deepseek:
     api-url: https://api.siliconflow.cn/v1/chat/completions
     api-key: sk-stwdcstqnkcztrsqsrmosrcpekiacrualyzzvsgfmzjvuurv
-    model: deepseek-ai/DeepSeek-R1-0528-Qwen3-8B
+    # model: deepseek-ai/DeepSeek-R1-0528-Qwen3-8B
+    model: Qwen/Qwen3-8B
     temperature: 0.1
     max-tokens: 4000
     timeout: 30000  # 30秒超时
@@ -75,8 +76,8 @@ ai:
   # HMS系统配置
   hms:
     api-url: http://172.16.1.13:10086
-    token: d440578b-5ab3-4254-adf9-d9527503ae84
-    dept-id: 100
+    token: 5b09fa6b-5c71-409c-9622-24d5614e1a8b
+    dept-id: 127
 
 # 监控配置
 management:
