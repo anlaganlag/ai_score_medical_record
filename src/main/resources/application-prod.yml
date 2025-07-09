@@ -76,8 +76,8 @@ ai:
   # HMS系统配置
   hms:
     api-url: http://172.16.1.13:10086
-    token: 5b09fa6b-5c71-409c-9622-24d5614e1a8b
-    dept-id: 127
+    token: 97285ff9-240a-4546-9f14-a9b858397716
+    systemdeptid: 127
 
   # 提示词模板配置 - 生产环境
   prompt:

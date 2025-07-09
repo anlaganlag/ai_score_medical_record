@@ -200,16 +200,16 @@ Response:
 #### 5.2.1 获取患者信息
 ```
 GET http://172.16.1.13:10086/admin-api/business/outpatient-blood/get?patientId=3835
-Authorization: Bearer 5b09fa6b-5c71-409c-9622-24d5614e1a8b
-systemdeptid: 100
+Authorization: Bearer 97285ff9-240a-4546-9f14-a9b858397716
+systemdeptid: 127
 ```
 
 #### 5.2.2 获取诊疗信息
 ```
 POST http://172.16.1.13:10086/admin-api/business/first-course-record/get
 Content-Type: application/json
-Authorization: Bearer 5b09fa6b-5c71-409c-9622-24d5614e1a8b
-systemdeptid: 100
+Authorization: Bearer 97285ff9-240a-4546-9f14-a9b858397716
+systemdeptid: 127
 
 Request Body:
 {
@@ -440,8 +440,8 @@ ai:
   
   hms:
     api-url: http://172.16.1.13:10086
-    token: 5b09fa6b-5c71-409c-9622-24d5614e1a8b
-    dept-id: 100
+    token: 97285ff9-240a-4546-9f14-a9b858397716
+    systemdeptid: 127
 ```
 
 ## 11. 风险评估

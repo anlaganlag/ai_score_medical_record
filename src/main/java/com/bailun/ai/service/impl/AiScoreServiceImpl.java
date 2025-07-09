@@ -55,9 +55,24 @@ public class AiScoreServiceImpl implements AiScoreService {
         Map<String, Object> patientData = hmsApiService.getPatientInfoRaw(request.getPatientId());
         
         try {
+            // 4. 详细日志记录数据状态
+            log.info("患者数据获取完成，patientData size: {}, treatmentInfo: {}", 
+                patientData != null ? patientData.size() : 0, 
+                treatmentInfo != null ? "不为空" : "为空");
+            
+            if (patientData != null) {
+                log.debug("患者数据内容: {}", objectMapper.writeValueAsString(patientData));
+            }
+            
+            if (treatmentInfo != null) {
+                log.debug("诊疗信息内容: {}", objectMapper.writeValueAsString(treatmentInfo));
+            }
+            
             // 4. 调用AI评分（使用结构化数据，包含调试信息）
+            log.info("开始调用AI评分服务");
             AiScoreDebugResponse debugResponse = deepSeekApiService.evaluateMedicalRecordWithDebug(patientData, treatmentInfo);
             AiScoreResponse aiResponse = debugResponse.getScoreResponse();
+            log.info("AI评分调用成功，总分: {}", aiResponse.getTotalScore());
             
             // 5. 保存评分结果（包含调试信息）
             AiScoreMedicalRecord record = buildScoreRecordWithDebug(
@@ -76,6 +91,9 @@ public class AiScoreServiceImpl implements AiScoreService {
         } catch (JsonProcessingException e) {
             log.error("序列化数据失败，患者ID: {}", request.getPatientId(), e);
             throw new RuntimeException("数据处理失败", e);
+        } catch (Exception e) {
+            log.error("AI评分生成失败，患者ID: {}", request.getPatientId(), e);
+            throw new RuntimeException("评分生成失败：" + e.getMessage(), e);
         }
     }
 

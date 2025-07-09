@@ -23,7 +23,7 @@ ai:
   hms:
     api-url: http://localhost:8080/mock
     token: test-token
-    dept-id: 100
+    systemdeptid: 127
 
 logging:
   level:

@@ -32,8 +32,8 @@ public class HmsApiServiceImpl implements HmsApiService {
     @Value("${ai.hms.token}")
     private String hmsToken;
 
-    @Value("${ai.hms.dept-id}")
-    private String hmsDeptId;
+    @Value("${ai.hms.systemdeptid}")
+    private String systemdeptid;
 
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
@@ -45,7 +45,7 @@ public class HmsApiServiceImpl implements HmsApiService {
             WebClient webClient = webClientBuilder
                     .baseUrl(hmsApiUrl)
                     .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + hmsToken)
-                    .defaultHeader("systemdeptid", hmsDeptId)
+                    .defaultHeader("systemdeptid", systemdeptid)
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build();
 
@@ -78,7 +78,7 @@ public class HmsApiServiceImpl implements HmsApiService {
             WebClient webClient = webClientBuilder
                     .baseUrl(hmsApiUrl)
                     .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + hmsToken)
-                    .defaultHeader("systemdeptid", hmsDeptId)
+                    .defaultHeader("systemdeptid", systemdeptid)
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build();
 
@@ -110,7 +110,7 @@ public class HmsApiServiceImpl implements HmsApiService {
             WebClient webClient = webClientBuilder
                     .baseUrl(hmsApiUrl)
                     .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + hmsToken)
-                    .defaultHeader("systemdeptid", hmsDeptId)
+                    .defaultHeader("systemdeptid", systemdeptid)
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build();
 

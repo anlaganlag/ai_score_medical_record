@@ -21,7 +21,7 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
-        
+
   # Flyway数据库迁移
   flyway:
     enabled: true
@@ -45,79 +45,45 @@ spring:
 # AI配置
 ai:
   deepseek:
-    api-url: https://api.siliconflow.cn/v1/chat/completions
+    api-url: https://api.siliconflow.cn
     api-key: sk-stwdcstqnkcztrsqsrmosrcpekiacrualyzzvsgfmzjvuurv
-    model: Qwen/Qwen3-8B
+    model: deepseek-ai/DeepSeek-R1
     retry-count: 1
     timeout: 600000
     temperature: 0.1
-    max-tokens: 10000
+    max-tokens: 16000
+    # Mock模式开关 - 设为true时使用模拟AI响应，设为false时使用真实AI API
+    mock:
+      enabled: false
   
   hms:
     api-url: http://172.16.1.13:10086
-    token: 5b09fa6b-5c71-409c-9622-24d5614e1a8b
-    dept-id: 127
+    token: 97285ff9-240a-4546-9f14-a9b858397716
+    systemdeptid: 127
 
   # 提示词模板配置
   prompt:
     template:
       system: |
-        你是一个专业的医疗质控专家，需要根据病历信息进行评分。
-        
-        ## 评分维度
-        请按照以下8个维度进行评分：
-        ${scoring_dimensions}
-        
-        ## 数据字段说明
-        患者基础信息字段说明：
-        ${patient_info_fields}
-        
-        诊疗信息字段说明：
-        ${treatment_info_fields}
-        
-        ## 输出格式要求
-        ${output_format}
-        
-        ## 评分标准
-        ${scoring_criteria}
-        
-      user: "请根据以下病历信息进行评分：\n患者信息：${patient_data}\n诊疗信息：${treatment_data}"
-      
-    variables:
-      scoring_dimensions: |
-        1. 主诉 (10分)：评估主诉的完整性和规范性
-        2. 病史 (20分)：包括现病史、既往史、过敏史等
-        3. 体格检查 (15分)：评估体格检查记录的完整性
-        4. 辅助检查 (5分)：评估检验检查结果的完整性
-        5. 诊断 (15分)：评估诊断的准确性和完整性
-        6. 处理 (20分)：评估治疗方案的合理性
-        7. 总体评价 (5分)：评估病历的整体质量
-        8. 其他 (10分)：评估其他方面如签名、规范性等
-        
-      patient_info_fields: |
-        - name: 患者姓名
-        - allergy: 过敏史
-        - tumor: 肿瘤史  
-        - smoking: 吸烟史
-        - tipple: 饮酒史
-        - dialyzeAge: 透析龄
-        - stature: 身高
-        - initWeight: 体重
-        - bloodType: 血型
-        - rh: Rh血型
-        - erythrocyte: 红细胞计数
-        
-      treatment_info_fields: |
-        - mainSuit: 主诉
-        - diagnosis: 诊断
-        - initDiagnosis: 初步诊断
-        - presentMedical: 现病史
-        - treatmentHistory: 治疗史
-        - treatmentHistoryContent: 治疗史详情
-        - tentativeDiagnosis: 初步诊断详情
-        
-      output_format: |
-        请严格按照以下JSON格式返回评分结果，不要包含任何其他文字：
+        你是一位资深的医疗质控专家，负责对住院病历进行质量评估。请严格按照以下评分标准进行评估：
+
+        ## 评分维度和标准
+        1. **主诉 (10分)**: 主诉是否简明扼要、准确反映患者就诊原因
+        2. **病史 (20分)**: 现病史、既往史、个人史、家族史是否详细完整
+        3. **体格检查 (15分)**: 体格检查记录是否全面、准确、规范
+        4. **诊断 (15分)**: 诊断是否准确、完整、符合疾病命名规范
+        5. **处理 (20分)**: 治疗方案是否合理、规范、有效
+        6. **其他 (20分)**: 病历书写规范性、完整性等其他方面
+
+        ## 评分等级
+        - 甲级：90-100分，病历质量优秀
+        - 乙级：75-89分，病历质量良好
+        - 丙级：60-74分，病历质量一般
+        - 不合格：60分以下
+
+        ## 输出格式
+        请严格按照以下JSON格式返回评估结果：
+        ```json
         {
           "totalScore": 总分数字,
           "level": "甲级/乙级/丙级",
@@ -126,59 +92,20 @@ ai:
               "item": "主诉",
               "fullScore": 10,
               "score": 实际得分,
-              "deduction": "扣分说明"
-            },
-            {
-              "item": "病史",
-              "fullScore": 20,
-              "score": 实际得分,
-              "deduction": "扣分说明"
-            },
-            {
-              "item": "体格检查",
-              "fullScore": 15,
-              "score": 实际得分,
-              "deduction": "扣分说明"
-            },
-            {
-              "item": "辅助检查",
-              "fullScore": 5,
-              "score": 实际得分,
-              "deduction": "扣分说明"
-            },
-            {
-              "item": "诊断",
-              "fullScore": 15,
-              "score": 实际得分,
-              "deduction": "扣分说明"
-            },
-            {
-              "item": "处理",
-              "fullScore": 20,
-              "score": 实际得分,
-              "deduction": "扣分说明"
-            },
-            {
-              "item": "总体评价",
-              "fullScore": 5,
-              "score": 实际得分,
-              "deduction": "扣分说明"
-            },
-            {
-              "item": "其他",
-              "fullScore": 10,
-              "score": 实际得分,
-              "deduction": "扣分说明"
+              "deduction": "扣分原因说明"
             }
           ]
         }
+        ```
         
-      scoring_criteria: |
-        评分标准：
-        - 甲级：90-100分
-        - 乙级：75-89分  
-        - 丙级：60-74分
-        - 不合格：60分以下
+      user: "请对以下病历进行质量评估：\n患者信息：${patient_data}\n诊疗信息：${treatment_data}"
+      
+    variables:
+      scoring_dimensions: "主诉、病史、检查、诊断、处理"
+      patient_info_fields: "基本信息"
+      treatment_info_fields: "诊疗信息"
+      output_format: "JSON格式"
+      scoring_criteria: "甲级90+，乙级75+，丙级60+"
 
 # 日志配置
 logging:

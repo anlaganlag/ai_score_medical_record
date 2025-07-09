@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "ai.deepseek.mock.enabled", havingValue = "false", matchIfMissing = true)
 public class DeepSeekApiServiceImpl implements DeepSeekApiService {
 
     private final WebClient.Builder webClientBuilder;
@@ -117,10 +119,25 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
 
         Map<String, Object> requestBody = buildRequestBody(medicalRecordJson);
         
+        // 添加请求日志
+        try {
+            String requestJson = objectMapper.writeValueAsString(requestBody);
+            log.info("AI请求体: {}", requestJson);
+        } catch (JsonProcessingException e) {
+            log.warn("序列化请求体用于日志记录失败", e);
+        }
+        
         Map<String, Object> response = webClient.post()
-                .uri("")
+                .uri("/v1/chat/completions")
                 .bodyValue(requestBody)
                 .retrieve()
+                .onStatus(status -> !status.is2xxSuccessful(), clientResponse -> {
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> {
+                                log.error("DeepSeek API错误响应 [{}]: {}", clientResponse.statusCode(), errorBody);
+                                return Mono.error(new RuntimeException("API调用失败: " + clientResponse.statusCode() + " - " + errorBody));
+                            });
+                })
                 .bodyToMono(Map.class)
                 .timeout(Duration.ofMillis(timeoutMs))
                 .block();
@@ -259,9 +276,16 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
         }
         
         Map<String, Object> response = webClient.post()
-                .uri("")
+                .uri("/v1/chat/completions")
                 .bodyValue(requestBody)
                 .retrieve()
+                .onStatus(status -> !status.is2xxSuccessful(), clientResponse -> {
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> {
+                                log.error("DeepSeek API错误响应 [{}]: {}", clientResponse.statusCode(), errorBody);
+                                return Mono.error(new RuntimeException("API调用失败: " + clientResponse.statusCode() + " - " + errorBody));
+                            });
+                })
                 .bodyToMono(Map.class)
                 .timeout(Duration.ofMillis(timeoutMs))
                 .block();
@@ -350,9 +374,16 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
         Map<String, Object> requestBody = buildRequestBodyWithStructuredData(patientData, treatmentInfo);
         
         Map<String, Object> response = webClient.post()
-                .uri("")
+                .uri("/v1/chat/completions")
                 .bodyValue(requestBody)
                 .retrieve()
+                .onStatus(status -> !status.is2xxSuccessful(), clientResponse -> {
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> {
+                                log.error("DeepSeek API错误响应 [{}]: {}", clientResponse.statusCode(), errorBody);
+                                return Mono.error(new RuntimeException("API调用失败: " + clientResponse.statusCode() + " - " + errorBody));
+                            });
+                })
                 .bodyToMono(Map.class)
                 .timeout(Duration.ofMillis(timeoutMs))
                 .block();
@@ -380,14 +411,22 @@ public class DeepSeekApiServiceImpl implements DeepSeekApiService {
         String requestJson;
         try {
             requestJson = objectMapper.writeValueAsString(requestBody);
+            log.info("AI请求体: {}", requestJson);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("序列化请求体失败", e);
         }
         
         Map<String, Object> response = webClient.post()
-                .uri("")
+                .uri("/v1/chat/completions")
                 .bodyValue(requestBody)
                 .retrieve()
+                .onStatus(status -> !status.is2xxSuccessful(), clientResponse -> {
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> {
+                                log.error("DeepSeek API错误响应 [{}]: {}", clientResponse.statusCode(), errorBody);
+                                return Mono.error(new RuntimeException("API调用失败: " + clientResponse.statusCode() + " - " + errorBody));
+                            });
+                })
                 .bodyToMono(Map.class)
                 .timeout(Duration.ofMillis(timeoutMs))
                 .block();

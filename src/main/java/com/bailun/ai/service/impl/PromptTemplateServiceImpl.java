@@ -1,12 +1,12 @@
 package com.bailun.ai.service.impl;
 
+import com.bailun.ai.config.PromptProperties;
 import com.bailun.ai.dto.TreatmentInfoDTO;
 import com.bailun.ai.service.PromptTemplateService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -20,38 +20,21 @@ import java.util.Map;
 public class PromptTemplateServiceImpl implements PromptTemplateService {
     
     private final ObjectMapper objectMapper;
-    
-    @Value("${ai.prompt.template.system}")
-    private String systemTemplate;
-    
-    @Value("${ai.prompt.template.user}")
-    private String userTemplate;
-    
-    @Value("${ai.prompt.variables.scoring_dimensions}")
-    private String scoringDimensions;
-    
-    @Value("${ai.prompt.variables.patient_info_fields}")
-    private String patientInfoFields;
-    
-    @Value("${ai.prompt.variables.treatment_info_fields}")
-    private String treatmentInfoFields;
-    
-    @Value("${ai.prompt.variables.output_format}")
-    private String outputFormat;
-    
-    @Value("${ai.prompt.variables.scoring_criteria}")
-    private String scoringCriteria;
+    private final PromptProperties promptProperties;
     
     @Override
     public String buildSystemPrompt() {
         log.debug("构建系统提示词");
         
+        String systemTemplate = promptProperties.getTemplate().getSystem();
+        Map<String, String> variables = promptProperties.getVariables();
+        
         String prompt = systemTemplate
-            .replace("${scoring_dimensions}", scoringDimensions)
-            .replace("${patient_info_fields}", patientInfoFields)
-            .replace("${treatment_info_fields}", treatmentInfoFields)
-            .replace("${output_format}", outputFormat)
-            .replace("${scoring_criteria}", scoringCriteria);
+            .replace("${scoring_dimensions}", variables.get("scoring_dimensions"))
+            .replace("${patient_info_fields}", variables.get("patient_info_fields"))
+            .replace("${treatment_info_fields}", variables.get("treatment_info_fields"))
+            .replace("${output_format}", variables.get("output_format"))
+            .replace("${scoring_criteria}", variables.get("scoring_criteria"));
             
         log.debug("系统提示词构建完成，长度: {}", prompt.length());
         return prompt;
@@ -62,6 +45,8 @@ public class PromptTemplateServiceImpl implements PromptTemplateService {
         log.debug("构建用户提示词，患者数据: {}, 诊疗信息: {}", 
                  patientData != null ? patientData.get("name") : "null",
                  treatmentInfo != null ? treatmentInfo.getMainSuit() : "null");
+        
+        String userTemplate = promptProperties.getTemplate().getUser();
         
         try {
             String patientDataJson = patientData != null ? 

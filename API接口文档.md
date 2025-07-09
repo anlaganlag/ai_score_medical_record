@@ -205,7 +205,7 @@ systemdeptid: {部门ID} (可选)
 curl -X POST "http://localhost:8080/admin-api/business/ai-score/generate" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-token" \
-  -H "systemdeptid: 100" \
+  -H "systemdeptid: 127" \
   -d '{
     "patientId": 123
   }'
@@ -215,7 +215,7 @@ curl -X POST "http://localhost:8080/admin-api/business/ai-score/generate" \
 ```bash
 curl -X GET "http://localhost:8080/admin-api/business/ai-score/report/123" \
   -H "Authorization: Bearer your-token" \
-  -H "systemdeptid: 100"
+  -H "systemdeptid: 127"
 ```
 
 ### 使用curl保存专家点评
@@ -223,7 +223,7 @@ curl -X GET "http://localhost:8080/admin-api/business/ai-score/report/123" \
 curl -X POST "http://localhost:8080/admin-api/business/ai-score/expert-comment" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-token" \
-  -H "systemdeptid: 100" \
+  -H "systemdeptid: 127" \
   -d '{
     "patientId": 123,
     "expertComment": "病历记录较为完整，建议补充辅助检查结果。"
