@@ -148,7 +148,12 @@ public class HmsApiServiceImpl implements HmsApiService {
         
         PatientInfoDTO dto = new PatientInfoDTO();
         dto.setId(getLongValue(data, "id"));
-        dto.setName(getStringValue(data, "name"));
+        
+        // 添加调试日志
+        String patientName = getStringValue(data, "patientName");
+        log.info("HMS API返回的患者姓名字段值: '{}'", patientName);
+        dto.setName(patientName);
+        
         dto.setAllergy(getStringValue(data, "allergy"));
         dto.setTumor(getStringValue(data, "tumor"));
         dto.setSmoking(getStringValue(data, "smoking"));

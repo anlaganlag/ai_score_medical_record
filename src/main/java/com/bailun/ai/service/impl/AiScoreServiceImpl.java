@@ -48,6 +48,9 @@ public class AiScoreServiceImpl implements AiScoreService {
             throw new IllegalArgumentException("患者信息不存在，患者ID: " + request.getPatientId());
         }
         
+        // 添加调试日志
+        log.info("获取到的患者信息 - ID: {}, 姓名: '{}'", patientInfo.getId(), patientInfo.getName());
+        
         // 2. 获取诊疗信息
         TreatmentInfoDTO treatmentInfo = hmsApiService.getTreatmentInfo(request.getPatientId());
         
