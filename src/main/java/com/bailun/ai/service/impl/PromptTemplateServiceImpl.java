@@ -42,22 +42,30 @@ public class PromptTemplateServiceImpl implements PromptTemplateService {
     
     @Override
     public String buildUserPrompt(Map<String, Object> patientData, TreatmentInfoDTO treatmentInfo) {
-        log.debug("构建用户提示词，患者数据: {}, 诊疗信息: {}", 
+        // 记录调试日志，显示正在构建用户提示词，并输出患者姓名和主诉信息用于调试
+        log.debug("构建用户提示词，患者数据: {}, 初步诊断: {}", 
                  patientData != null ? patientData.get("name") : "null",
-                 treatmentInfo != null ? treatmentInfo.getMainSuit() : "null");
+                 treatmentInfo != null ? treatmentInfo.getInitDiagnosis() : "null");
         
+        // 从配置属性中获取用户提示词模板
         String userTemplate = promptProperties.getTemplate().getUser();
         
         try {
+            // 将患者数据对象序列化为JSON字符串，如果为null则使用空对象"{}"
             String patientDataJson = patientData != null ? 
                 objectMapper.writeValueAsString(patientData) : "{}";
+            // 将诊疗信息对象序列化为JSON字符串，如果为null则使用空对象"{}"
             String treatmentDataJson = treatmentInfo != null ? 
                 objectMapper.writeValueAsString(treatmentInfo) : "{}";
             
+            // 使用字符串替换将模板中的占位符替换为实际的JSON数据
+            // ${patient_data} 替换为患者数据JSON
+            // ${treatment_data} 替换为诊疗信息JSON
             String prompt = userTemplate
                 .replace("${patient_data}", patientDataJson)
                 .replace("${treatment_data}", treatmentDataJson);
                 
+            // 记录构建完成的日志，包含最终提示词的长度
             log.debug("用户提示词构建完成，长度: {}", prompt.length());
             return prompt;
             

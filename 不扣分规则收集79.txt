@@ -1,0 +1,13 @@
+           1.主诉的是字段是mainSuit,(主诉不在content字段里也不是chiefComplaint,即"{\"chiefComplaint\":null}"不扣分)
+           2.家族史显示为1即"familyHistory":["1"]为无特殊,不扣分
+          输血史transfusionBlood":null等如果为null或者2都是默认为无,不扣分    
+          专科治疗史: [1]是腹透史 [2]是肾移植 [3]是内瘘 [4]是自体血管 [5]是人工血管 [6]是长期置管 [7]是临时置管 
+            "treatmentHistory\":[3],\"treatmentHistoryContent\":\"2023-06行左前臂自体动静脉内瘘成形术。\"例如里可以解读为: 专科治疗史为内瘘,不扣分   
+            既往史、个人史、家族史、专科治疗史如果为空或为2,不扣分,比如下面的例子就不扣分:,\"chronicDiseasesHistory\":2,\"vaccination\":2,\"foodAllergies\":2,\"foodAllergiesText\":null,\"traumaSurgery\":2,\"transfusionBlood\":null,\"placeResidence\":2,\"badHabit\":2,\"badHabitText\":null,\"contact\":2,\"marriageAge\":\"/\",\"spouse\":null,\"spouseSituation\":\"/\",\"lastMenstrualPeriod\":null,\"familyHistory\":[\"1\"],\"familyHistoryText\":\"\",\"history\":\"末次月经： 年   月   日\",\"menstruation\":2
+           3. 体格检查如如腹部触诊值包含无效字符等都不扣分。
+           4. 诊断扣分,只参考initDiagnosis字段打分
+           5. 其他扣分,由于是电子病历,无需考虑医生签名,所以不扣分
+           6.undefined不扣分
+
+
+

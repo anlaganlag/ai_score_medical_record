@@ -32,33 +32,67 @@
     <div class="report-content">
       <el-row :gutter="20">
         <!-- 分项评分 -->
-        <el-col :span="12">
+        <el-col :span="16">
           <div class="section-title">
             <i class="el-icon-data-line"></i>
-            分项评分
+            详细评分
           </div>
           <div class="score-details">
             <div 
-              v-for="(item, key) in report.details"
-              :key="key"
+              v-for="(item, index) in report.details"
+              :key="index"
               class="score-item"
             >
-              <span class="item-label">{{ getDetailLabel(key) }}</span>
-              <div class="item-score">
-                <el-progress
-                  :percentage="item"
-                  :color="getProgressColor(item)"
-                  :stroke-width="8"
-                  :show-text="false"
-                />
-                <span class="score-text">{{ item }}分</span>
+              <div class="item-header">
+                <span class="item-label">{{ item.item }}</span>
+                <div class="item-score">
+                  <el-progress
+                    :percentage="getPercentage(item.score, item.fullScore)"
+                    :color="getProgressColor(getPercentage(item.score, item.fullScore))"
+                    :stroke-width="8"
+                    :show-text="false"
+                  />
+                  <span class="score-text">{{ item.score }}/{{ item.fullScore }}分</span>
+                </div>
+              </div>
+              
+              <!-- 扣分说明 -->
+              <div v-if="item.deduction" class="deduction-info">
+                <span class="deduction-label">扣分原因：</span>
+                <span class="deduction-text">{{ item.deduction }}</span>
+              </div>
+              
+              <!-- 字段详情 -->
+              <div v-if="item.fieldDetails && item.fieldDetails.length > 0" class="field-details">
+                <div class="field-details-title">
+                  <i class="el-icon-warning"></i>
+                  问题字段详情
+                </div>
+                <div 
+                  v-for="(field, fieldIndex) in item.fieldDetails"
+                  :key="fieldIndex"
+                  class="field-detail-item"
+                >
+                  <div class="field-info">
+                    <span class="field-name">{{ field.fieldLabel }}</span>
+                    <el-tag type="info" size="mini">{{ field.fieldName }}</el-tag>
+                  </div>
+                  <div class="field-value">
+                    <span class="value-label">当前值：</span>
+                    <span class="value-content">{{ field.fieldValue || '空值' }}</span>
+                  </div>
+                  <div class="field-issue">
+                    <span class="issue-label">问题：</span>
+                    <span class="issue-content">{{ field.issue }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </el-col>
 
         <!-- AI建议 -->
-        <el-col :span="12">
+        <el-col :span="8">
           <div class="section-title">
             <i class="el-icon-info"></i>
             AI分析建议
@@ -230,6 +264,12 @@ export default {
       return new Date(time).toLocaleString('zh-CN')
     },
 
+    // 计算百分比
+    getPercentage(score, fullScore) {
+      if (fullScore === 0) return 0
+      return (score / fullScore) * 100
+    },
+
     // 开始编辑
     startEdit() {
       this.isEditing = true
@@ -356,32 +396,144 @@ export default {
 
     .score-details {
       .score-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-        
-        .item-label {
-          font-size: 14px;
-          color: #666;
-          min-width: 80px;
-        }
-        
-        .item-score {
-          flex: 1;
+        border: 1px solid #e8e8e8;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+
+        .item-header {
           display: flex;
+          justify-content: space-between;
           align-items: center;
-          margin-left: 15px;
-          
-          .el-progress {
-            flex: 1;
-            margin-right: 10px;
+          margin-bottom: 10px;
+
+          .item-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
           }
-          
-          .score-text {
-            font-size: 12px;
-            color: #666;
-            min-width: 40px;
+
+          .item-score {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            .el-progress {
+              flex: 1;
+              margin-right: 10px;
+            }
+            
+            .score-text {
+              font-size: 14px;
+              color: #666;
+              min-width: 60px;
+            }
+          }
+        }
+
+        .deduction-info {
+          background-color: #fffbe6;
+          border: 1px solid #ffe58f;
+          border-radius: 4px;
+          padding: 8px 12px;
+          margin-top: 10px;
+          margin-bottom: 10px;
+
+          .deduction-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #faad14;
+            margin-right: 5px;
+          }
+
+          .deduction-text {
+            font-size: 14px;
+            color: #faad14;
+            line-height: 1.5;
+          }
+        }
+
+        .field-details {
+          margin-top: 15px;
+          border: 1px solid #e8e8e8;
+          border-radius: 4px;
+          padding: 10px;
+          background-color: #f8f9fa;
+
+          .field-details-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+
+            i {
+              margin-right: 8px;
+              color: #1890ff;
+            }
+          }
+
+          .field-detail-item {
+            border-bottom: 1px dashed #e8e8e8;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+
+            &:last-child {
+              border-bottom: none;
+              margin-bottom: 0;
+              padding-bottom: 0;
+            }
+
+            .field-info {
+              display: flex;
+              align-items: center;
+              margin-bottom: 5px;
+
+              .field-name {
+                font-size: 14px;
+                font-weight: 600;
+                color: #2c3e50;
+                margin-right: 10px;
+              }
+
+              .el-tag {
+                font-size: 12px;
+              }
+            }
+
+            .field-value {
+              font-size: 14px;
+              color: #666;
+              margin-bottom: 5px;
+
+              .value-label {
+                font-weight: 600;
+                color: #2c3e50;
+              }
+
+              .value-content {
+                font-weight: 400;
+                color: #2c3e50;
+              }
+            }
+
+            .field-issue {
+              font-size: 14px;
+              color: #f5222d;
+              font-weight: 600;
+
+              .issue-label {
+                font-weight: 600;
+                color: #f5222d;
+              }
+
+              .issue-content {
+                font-weight: 400;
+                color: #f5222d;
+              }
+            }
           }
         }
       }

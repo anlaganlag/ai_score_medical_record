@@ -79,11 +79,7 @@ class AiScoreServiceTest {
         // 模拟诊疗信息
         testTreatmentInfo = new TreatmentInfoDTO();
         testTreatmentInfo.setPatientId(3835L);
-        testTreatmentInfo.setMainSuit("维持性血液透析11年余。");
         testTreatmentInfo.setInitDiagnosis("慢性肾脏病5期,维持性血透状态,肾性贫血,肾性高血压,继发性甲状旁腺功能亢进,高磷酸血症,高尿酸血症,代谢性酸中毒,高钾血症");
-        testTreatmentInfo.setHealingProject(null); // Not in new JSON
-        testTreatmentInfo.setNowDiseaseHistory("患者于2013年6月因头晕、乏力、全身浮肿、恶心、呕吐、食欲减退在深圳市龙华区人民医院诊断为慢性肾脏病5期，肾性贫血，肾性骨病，开始规律性血液透析治疗，并行左前臂自体动静脉血管造瘘术，同年8月启用内瘘。目前透析方案为3次/周，每次超滤量为2500-3000ml，现干体重为57kg，为继续行规律血液透析收入我中心。患者平素未诉不适，双下肢无水肿，无乏力、胸闷、心悸、气促，无头晕、头痛，胃纳欠佳，精神、睡眠一般，无尿，大便正常。");
-        testTreatmentInfo.setOldDiseaseHistory("乙型病毒性肝炎. 2013年左前臂自体动静脉血管造瘘术。");
     }
 
     @Test

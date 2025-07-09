@@ -19,5 +19,14 @@ public class AiScoreResponse {
         private Integer fullScore;
         private Integer score;
         private String deduction;
+        private List<FieldDetail> fieldDetails;
+    }
+    
+    @Data
+    public static class FieldDetail {
+        private String fieldName;
+        private String fieldLabel;
+        private String fieldValue;
+        private String issue;
     }
 } 

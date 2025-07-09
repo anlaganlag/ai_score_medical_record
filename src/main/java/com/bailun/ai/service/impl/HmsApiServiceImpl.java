@@ -182,23 +182,7 @@ public class HmsApiServiceImpl implements HmsApiService {
         
         TreatmentInfoDTO dto = new TreatmentInfoDTO();
         dto.setPatientId(getLongValue(data, "patientId"));
-        dto.setMainSuit(getStringValue(data, "mainSuit"));
         dto.setInitDiagnosis(getStringValue(data, "initDiagnosis"));
-        dto.setHealingProject(getStringValue(data, "healingProject"));
-        dto.setNowDiseaseHistory(getStringValue(data, "nowDiseaseHistory"));
-        dto.setOldDiseaseHistory(getStringValue(data, "oldDiseaseHistory"));
-        dto.setWeightPre(getStringValue(data, "weightPre"));
-        dto.setPressurePre(getStringValue(data, "pressurePre"));
-        dto.setBodyInspect(getStringValue(data, "bodyInspect"));
-        dto.setAssayInspect(getStringValue(data, "assayInspect"));
-        dto.setDiagnosis(getStringValue(data, "diagnosis"));
-        dto.setDiseaseReasonNames(getStringValue(data, "diseaseReasonNames"));
-        dto.setDialysisPlan(getStringValue(data, "dialysisPlan"));
-        dto.setMedic(getStringValue(data, "medic"));
-        dto.setNurse(getStringValue(data, "nurse"));
-        dto.setFacilityName(getStringValue(data, "facilityName"));
-        dto.setStartDialyzeTime(getStringValue(data, "startDialyzeTime"));
-        dto.setEndDialyzeTime(getStringValue(data, "endDialyzeTime"));
         
         return dto;
     }
