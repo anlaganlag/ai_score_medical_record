@@ -10,15 +10,18 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-REM 检查JAR文件是否存在
-if not exist "target\ai-medical-score-1.0.0-SNAPSHOT.jar" (
-    echo JAR file not found. Building project...
-    call mvnd clean package -DskipTests
-    if %errorlevel% neq 0 (
-        echo Build failed!
-        pause
-        exit /b 1
-    )
+REM 删除现有JAR文件并重新构建
+if exist "target\ai-medical-score-1.0.0-SNAPSHOT.jar" (
+    echo Deleting existing JAR file...
+    del target\ai-medical-score-1.0.0-SNAPSHOT.jar
+)
+
+echo Building project...
+call mvnd clean package -DskipTests
+if %errorlevel% neq 0 (
+    echo Build failed!
+    pause
+    exit /b 1
 )
 
 REM 启动应用

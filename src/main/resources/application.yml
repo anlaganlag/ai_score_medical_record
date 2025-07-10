@@ -47,18 +47,18 @@ ai:
   deepseek:
     api-url: https://api.siliconflow.cn
     api-key: sk-stwdcstqnkcztrsqsrmosrcpekiacrualyzzvsgfmzjvuurv
-    model: deepseek-ai/DeepSeek-R1
+    model: Qwen/Qwen3-8B
     retry-count: 1
     timeout: 600000
     temperature: 0.1
     max-tokens: 16000
     # Mock模式开关 - 设为true时使用模拟AI响应，设为false时使用真实AI API
     mock:
-      enabled: false
+      enabled: true
   
   hms:
     api-url: http://172.16.1.13:10086
-    token: 97285ff9-240a-4546-9f14-a9b858397716
+    token: 6a5a8919-a9c7-4605-b917-3abb1df91e83
     systemdeptid: 127
 
   # 提示词模板配置
