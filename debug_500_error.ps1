@@ -15,7 +15,7 @@ try {
 # 2. 测试HMS API连接
 Write-Host "`n2. 测试HMS API连接..." -ForegroundColor Yellow
 $hmsUrl = "http://172.16.1.13:10086"
-$token = "97285ff9-240a-4546-9f14-a9b858397716"
+$token = "6a5a8919-a9c7-4605-b917-3abb1df91e83"
 
 try {
     $headers = @{ "token" = $token }

@@ -3,7 +3,7 @@ Write-Host "=== 调试HMS API患者姓名返回 ===" -ForegroundColor Green
 
 # 测试HMS API直接调用
 $hmsHeaders = @{
-    "Authorization" = "Bearer 97285ff9-240a-4546-9f14-a9b858397716"
+    "Authorization" = "Bearer 6a5a8919-a9c7-4605-b917-3abb1df91e83"
     "systemdeptid" = "127"
     "Content-Type" = "application/json"
 }

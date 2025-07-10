@@ -200,7 +200,7 @@ Response:
 #### 5.2.1 获取患者信息
 ```
 GET http://172.16.1.13:10086/admin-api/business/outpatient-blood/get?patientId=3835
-Authorization: Bearer 97285ff9-240a-4546-9f14-a9b858397716
+Authorization: Bearer 6a5a8919-a9c7-4605-b917-3abb1df91e83
 systemdeptid: 127
 ```
 
@@ -208,7 +208,7 @@ systemdeptid: 127
 ```
 POST http://172.16.1.13:10086/admin-api/business/first-course-record/get
 Content-Type: application/json
-Authorization: Bearer 97285ff9-240a-4546-9f14-a9b858397716
+Authorization: Bearer 6a5a8919-a9c7-4605-b917-3abb1df91e83
 systemdeptid: 127
 
 Request Body:
@@ -440,7 +440,7 @@ ai:
   
   hms:
     api-url: http://172.16.1.13:10086
-    token: 97285ff9-240a-4546-9f14-a9b858397716
+    token: 6a5a8919-a9c7-4605-b917-3abb1df91e83
     systemdeptid: 127
 ```
 
